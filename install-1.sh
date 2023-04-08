@@ -11,10 +11,30 @@
 #sudo yum install -y python3-pip
 #sudo pip3 install docker-compose
 
-sudo apt-get update && sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add - && sudo add-apt-repository "deb [arch=amd64] http://mirrors.aliyun.com/docker-ce/linux/ubuntu $(lsb_release -cs) stable" && sudo apt-get update && sudo apt-get install -y docker-ce
-sudo apt-get install docker-compose-plugin
-sudo systemctl start docker
-sudo systemctl enable docker
+# 安装依赖关系
+sudo apt-get update
+sudo apt-get -y install \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release
+
+# 添加Docker GPG密钥
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+
+# 配置 Docker 软件源
+echo \
+  "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# 安装 Docker 引擎
+sudo apt-get update
+sudo apt-get -y install docker-ce docker-ce-cli containerd.io docker-compose-plugin
+
+# 添加用户到 docker 组
+sudo usermod -aG docker $USER
+
 
 # Creating docker-compose.yml
 mkdir -p ./typecho
