@@ -13,6 +13,8 @@
 
 sudo apt-get update && sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add - && sudo add-apt-repository "deb [arch=amd64] http://mirrors.aliyun.com/docker-ce/linux/ubuntu $(lsb_release -cs) stable" && sudo apt-get update && sudo apt-get install -y docker-ce
 sudo apt-get install docker-compose-plugin
+sudo systemctl start docker
+sudo systemctl enable docker
 
 # Creating Xray profiles
 mkdir -p /typecho/xray/config
@@ -240,9 +242,6 @@ networks:
     dockernet:
 EOF
 
-# Clone repository
-git clone https://github.com/weiwuji1/docker-xray-web.git
-cd docker-xray-web
 
 # Modify database credentials in docker-compose.yml
 read -p "Enter database username: " DB_USER
