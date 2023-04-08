@@ -16,141 +16,9 @@ sudo apt-get install docker-compose-plugin
 sudo systemctl start docker
 sudo systemctl enable docker
 
-# Creating Xray profiles
-mkdir -p /typecho/xray/config
-cat <<EOF >  /typecho/xray/config/config.json
-{
-    "log": {
-        "loglevel": "warning"
-    },
-    "api": null,
-    "routing": {
-        "domainStrategy": "IPOnDemand",
-        "rules": [
-            {
-                "type": "field",
-                "ip": [
-                    "geoip:private",
-		    "0.0.0.0/8",
-                    "10.0.0.0/8",
-                    "100.64.0.0/10",
-                    "127.0.0.0/8",
-                    "169.254.0.0/16",
-                    "172.16.0.0/12",
-                    "192.0.0.0/24",
-                    "192.0.2.0/24",
-                    "192.168.0.0/16",
-                    "198.18.0.0/15",
-                    "198.51.100.0/24",
-                    "203.0.113.0/24",
-                    "::1/128",
-                    "fc00::/7",
-                    "fe80::/10"
-                ],
-                "outboundTag": "blocked"
-            },
-	    {
-                "type": "field",
-                "protocol": [
-                    "bittorrent"
-                ],
-                "outboundTag": "blocked"
-            }
-        ]
-    },
-    "policy": {},
-    "inbounds": [
-        {
-            "port": 10000,
-            "listen": "0.0.0.0",
-            "protocol": "vless",
-            "settings": {
-                "udp": true,
-                "clients": [
-                    {
-                        "id": "Your-U-U-ID-HERE"
-                    }
-                ],
-                "decryption": "none"
-            },
-            "streamSettings": {
-                "network": "ws",
-                "security": "none",
-                "wsSettings": {
-                    "path": "/one"
-                }
-            }
-        }
-    ],
-    "outbounds": [
-        {
-            "protocol": "freedom",
-            "settings": {
-                "domainStrategy": "UseIP"
-            },
-            "tag": "direct"
-        },
-        {
-            "protocol": "blackhole",
-            "tag": "block"
-        }
-    ],
-    "transport": {},
-    "stats": null,
-    "reverse": {}
-}
-EOF
-
-# Creating nginx profiles
-mkdir -p /typecho/nginx/conf.d
-cat <<EOF > /typecho/nginx/conf.d/default.conf
-server {
-    listen      443 ssl;
-    listen  [::]:443 ssl;
-    server_name  yourdomain.com;
-	
-	root   /usr/share/nginx/html;
-	index  index.html index.htm;
-	
-	ssl_certificate      /etc/nginx/ssl/xray.crt;
-	ssl_certificate_key  /etc/nginx/ssl/xray.key;
-	ssl_protocols TLSv1.1 TLSv1.2;
-	ssl_session_timeout  5m;
-	ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE;
-	ssl_prefer_server_ciphers  on;
-	location  /one {
-      	if (\$http_upgrade = "websocket") {
-      	  	proxy_pass http://xray:10000;
-      	}
-      	# 仅当请求为 WebSocket 时才反代到 V2Ray
-      	if (\$http_upgrade != "websocket") {
-      	 #否则显示正常网页
-	      	rewrite ^/(.*)$ /index.html last;
-      	}
-      	proxy_redirect off;
-      	proxy_http_version 1.1;
-      	proxy_set_header Upgrade \$http_upgrade;
-      	proxy_set_header Connection "upgrade";
-      	proxy_set_header Host \$http_host;
-      	proxy_set_header X-Real-IP \$remote_addr;
-      	proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-	}
-  location = /50x.html {
-      root   /usr/share/nginx/html;
-  }
-}
-server {
-	 listen 80;
-	 server_name yourdomain.com;  
-	 rewrite ^(.*)$ https://\$host\$1 permanent;
-	 location / {
-	    index index.html index.htm;
-	  }
-}
-EOF
-
 # Creating docker-compose.yml
-cat <<EOF >  /typecho/docker-compose.yml
+mkdir -p ./typecho
+cat <<EOF >  ./typecho/docker-compose.yml
 version: "3"
 services: 
     xray:
@@ -242,6 +110,139 @@ networks:
     dockernet:
 EOF
 
+# Creating nginx profiles
+mkdir -p ./typecho/nginx/conf.d
+cat <<EOF > ./typecho/nginx/conf.d/default.conf
+server {
+    listen      443 ssl;
+    listen  [::]:443 ssl;
+    server_name  yourdomain.com;
+	
+	root   /usr/share/nginx/html;
+	index  index.html index.htm;
+	
+	ssl_certificate      /etc/nginx/ssl/xray.crt;
+	ssl_certificate_key  /etc/nginx/ssl/xray.key;
+	ssl_protocols TLSv1.1 TLSv1.2;
+	ssl_session_timeout  5m;
+	ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE;
+	ssl_prefer_server_ciphers  on;
+	location  /one {
+      	if (\$http_upgrade = "websocket") {
+      	  	proxy_pass http://xray:10000;
+      	}
+      	# 仅当请求为 WebSocket 时才反代到 V2Ray
+      	if (\$http_upgrade != "websocket") {
+      	 #否则显示正常网页
+	      	rewrite ^/(.*)$ /index.html last;
+      	}
+      	proxy_redirect off;
+      	proxy_http_version 1.1;
+      	proxy_set_header Upgrade \$http_upgrade;
+      	proxy_set_header Connection "upgrade";
+      	proxy_set_header Host \$http_host;
+      	proxy_set_header X-Real-IP \$remote_addr;
+      	proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+	}
+  location = /50x.html {
+      root   /usr/share/nginx/html;
+  }
+}
+server {
+	 listen 80;
+	 server_name yourdomain.com;  
+	 rewrite ^(.*)$ https://\$host\$1 permanent;
+	 location / {
+	    index index.html index.htm;
+	  }
+}
+EOF
+
+
+# Creating Xray profiles
+mkdir -p ./typecho/xray/config
+cat <<EOF >  ./typecho/xray/config/config.json
+{
+    "log": {
+        "loglevel": "warning"
+    },
+    "api": null,
+    "routing": {
+        "domainStrategy": "IPOnDemand",
+        "rules": [
+            {
+                "type": "field",
+                "ip": [
+                    "geoip:private",
+		    "0.0.0.0/8",
+                    "10.0.0.0/8",
+                    "100.64.0.0/10",
+                    "127.0.0.0/8",
+                    "169.254.0.0/16",
+                    "172.16.0.0/12",
+                    "192.0.0.0/24",
+                    "192.0.2.0/24",
+                    "192.168.0.0/16",
+                    "198.18.0.0/15",
+                    "198.51.100.0/24",
+                    "203.0.113.0/24",
+                    "::1/128",
+                    "fc00::/7",
+                    "fe80::/10"
+                ],
+                "outboundTag": "blocked"
+            },
+	    {
+                "type": "field",
+                "protocol": [
+                    "bittorrent"
+                ],
+                "outboundTag": "blocked"
+            }
+        ]
+    },
+    "policy": {},
+    "inbounds": [
+        {
+            "port": 10000,
+            "listen": "0.0.0.0",
+            "protocol": "vless",
+            "settings": {
+                "udp": true,
+                "clients": [
+                    {
+                        "id": "Your-U-U-ID-HERE"
+                    }
+                ],
+                "decryption": "none"
+            },
+            "streamSettings": {
+                "network": "ws",
+                "security": "none",
+                "wsSettings": {
+                    "path": "/one"
+                }
+            }
+        }
+    ],
+    "outbounds": [
+        {
+            "protocol": "freedom",
+            "settings": {
+                "domainStrategy": "UseIP"
+            },
+            "tag": "direct"
+        },
+        {
+            "protocol": "blackhole",
+            "tag": "block"
+        }
+    ],
+    "transport": {},
+    "stats": null,
+    "reverse": {}
+}
+EOF
 
 # Modify database credentials in docker-compose.yml
 read -p "Enter database username: " DB_USER
