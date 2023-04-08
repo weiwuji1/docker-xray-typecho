@@ -253,23 +253,23 @@ read -p "Enter your Cloudflare Account ID: " CF_ID
 read -p "Enter your Cloudflare Zone ID: " ZONE_ID
 read -p "Enter your Cloudflare Token: " CF_TOKEN
 
-sed -i "s/DB_USER/$DB_USER/g" /root/typecho/docker-compose.yml
-sed -i "s/DB_PASS/$DB_PASS/g" /root/typecho/docker-compose.yml
-sed -i "s/DB_NAME/$DB_NAME/g" /root/typecho/docker-compose.yml
-sed -i "s/cf_account_id/$CF_ID/g" /root/typecho/docker-compose.yml
-sed -i "s/cf_zonet_id/$ZONE_ID/g" /root/typecho/docker-compose.yml
-sed -i "s/cf_token/$CF_TOKEN/g" /root/typecho/docker-compose.yml
-sed -i "s/yourdomain.com/$DOMAIN/g" /root/typecho/docker-compose-cf.yml
+sed -i "s/DB_USER/$DB_USER/g" ./typecho/docker-compose.yml
+sed -i "s/DB_PASS/$DB_PASS/g" ./typecho/docker-compose.yml
+sed -i "s/DB_NAME/$DB_NAME/g" ./typecho/docker-compose.yml
+sed -i "s/cf_account_id/$CF_ID/g" ./typecho/docker-compose.yml
+sed -i "s/cf_zonet_id/$ZONE_ID/g" ./typecho/docker-compose.yml
+sed -i "s/cf_token/$CF_TOKEN/g" ./typecho/docker-compose.yml
+sed -i "s/yourdomain.com/$DOMAIN/g" ./typecho/docker-compose.yml
 
 # Modify domain name in nginx config
-sed -i "s/yourdomain.com/$DOMAIN/g" /root/typecho/nginx/conf.d/default.conf
+sed -i "s/yourdomain.com/$DOMAIN/g" ./typecho/nginx/conf.d/default.conf
 
 # Modify UUID and email in Xray config
 read -p "Enter Xray UUID: " XRAY_UUID
 read -p "Enter email for Xray: " XRAY_EMAIL
 
-sed -i "s/Your-U-U-ID-HERE/$XRAY_UUID/g" /root/typecho/xray/config/config.json
-sed -i "s/admin@yourdomain.com/$XRAY_EMAIL/g" /root/typecho/xray/config/config.json
+sed -i "s/Your-U-U-ID-HERE/$XRAY_UUID/g" ./typecho/xray/config/config.json
+sed -i "s/admin@yourdomain.com/$XRAY_EMAIL/g" ./typecho/xray/config/config.json
 
 # Create and start containers
 sudo docker compose up -d
@@ -285,8 +285,8 @@ sudo docker compose down
 sudo chmod -R 777 nginx
 sudo docker compose up -d
 
-wget --no-check-certificate --content-disposition https://github.com/typecho/typecho/releases/download/v1.2.1-rc/typecho.zip -P /root/typecho/nginx/www
-cd /root/typecho/nginx/www
+wget --no-check-certificate --content-disposition https://github.com/typecho/typecho/releases/download/v1.2.1-rc/typecho.zip -P ./typecho/nginx/www
+cd ./typecho/nginx/www
 sudo apt-get install unzip
 unzip *.zip
 
