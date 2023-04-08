@@ -16,6 +16,7 @@ sudo apt-get update
 sudo apt-get -y install \
     apt-transport-https \
     ca-certificates \
+    wget \
     curl \
     gnupg \
     lsb-release
@@ -42,7 +43,7 @@ cat <<EOF >  ./typecho/docker-compose.yml
 version: "3"
 services: 
     xray:
-        image: teddysun/xray:1.7.5
+        image: teddysun/xray
         container_name: xray
         restart: always
         environment: 
