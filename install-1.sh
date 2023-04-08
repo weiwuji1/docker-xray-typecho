@@ -138,8 +138,8 @@ server {
     listen  [::]:443 ssl;
     server_name  yourdomain.com;
 	
-	root   /usr/share/nginx/html;
-	index  index.html index.htm;
+	root   /var/www/typecho/;
+	index  index.html index.htm index.php;
 	
 	ssl_certificate      /etc/nginx/ssl/xray.crt;
 	ssl_certificate_key  /etc/nginx/ssl/xray.key;
@@ -154,7 +154,7 @@ server {
       	# 仅当请求为 WebSocket 时才反代到 V2Ray
       	if (\$http_upgrade != "websocket") {
       	 #否则显示正常网页
-	      	rewrite ^/(.*)$ /index.html last;
+	      	rewrite ^/(.*)$ /index.php last;
       	}
       	proxy_redirect off;
       	proxy_http_version 1.1;
@@ -165,7 +165,7 @@ server {
       	proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
 	}
   location = /50x.html {
-      root   /usr/share/nginx/html;
+      root   /var/www/typecho/;
   }
 }
 server {
@@ -173,7 +173,7 @@ server {
 	 server_name yourdomain.com;  
 	 rewrite ^(.*)$ https://\$host\$1 permanent;
 	 location / {
-	    index index.html index.htm;
+	    index index.html index.htm index.php;
 	  }
 }
 EOF
