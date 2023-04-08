@@ -48,7 +48,7 @@ services:
         environment: 
             TZ: Asia/Shanghai
         ports: 
-            - 443:443
+            - 10000:10000
         volumes: 
             - ./xray/config:/etc/xray
             - ./xray/logs:/var/log/xray
@@ -81,6 +81,7 @@ services:
             TZ: Asia/Shanghai
         ports:
             - 80:80
+	    - 443:443
         volumes: 
             - ./nginx/conf.d:/etc/nginx/conf.d
             - ./nginx/www:/var/www
