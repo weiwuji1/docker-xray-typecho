@@ -292,6 +292,7 @@ sed -i "s/Your-U-U-ID-HERE/$XRAY_UUID/g" ./typecho/xray/config/config.json
 sed -i "s/admin@yourdomain.com/$XRAY_EMAIL/g" ./typecho/xray/config/config.json
 
 # Create and start containers
+cd ./typecho
 sudo docker compose up -d
 
 # Install certificate
@@ -305,8 +306,8 @@ sudo docker compose down
 sudo chmod -R 777 nginx
 sudo docker compose up -d
 
-wget --no-check-certificate --content-disposition https://github.com/typecho/typecho/releases/download/v1.2.1-rc/typecho.zip -P ./typecho/nginx/www
-cd ./typecho/nginx/www
+wget --no-check-certificate --content-disposition https://github.com/typecho/typecho/releases/download/v1.2.1-rc/typecho.zip -P ./nginx/www
+cd ./nginx/www
 sudo apt-get install unzip
 unzip *.zip
 
