@@ -1,83 +1,19 @@
 #!/bin/bash
-DOMAIN=$1
-UUID=$2
-P=$3
-echo "域名："$DOMAIN
-echo "uuid："$UUID
-echo "路径："$P
-echo '回车确定：'
-read -s -n 1 key
-if [[ $key = "" ]]; then 
-    echo '开始执行!'
-else
-    echo "You pressed '$key'"
-    exit 1
-fi
-function pauseErr(){
-    if [ $? -ne 0 ];then
-        echo "pause because of failed ; Ctrl + C to exit"
-        #沉睡100秒，以便查看异常信息
-        sleep 100
-        #当调用者使用Ctrl + C打断沉睡之后，直接退出脚本，阻止脚本向下执行
-        exit
-    fi
-}
-rm -rf /docker/nginx
-rm -rf /docker/xray
-echo '安装依赖'
-echo "source /etc/profile" >> ~/.bashrc
-apt update && apt -y upgrade && apt -y install git curl apt-utils cron wget
-pauseErr
-echo 'speedtest'
-# speedtest
-apt -y install python python3 
-ln -s /usr/bin/python3 /usr/bin/python
-wget https://raw.github.com/sivel/speedtest-cli/master/speedtest.py
-chmod a+rx speedtest.py
-mv speedtest.py /usr/local/bin/speedtest
-chown root:root /usr/local/bin/speedtest
 
-pauseErr
-# traceroute 
-echo 'traceroute'
-apt -y install traceroute
+# Install docker-ce and docker-compose
+sudo yum install -y yum-utils
+sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+sudo yum install -y docker-ce docker-ce-cli containerd.io
+sudo systemctl start docker
+sudo systemctl enable docker
 
-pauseErr
-# bbr
-echo 'bbr 脚本'
-cd ~
-wget -O tcp.sh "https://git.io/coolspeeda" && chmod +x tcp.sh 
+sudo yum install -y epel-release
+sudo yum install -y python3-pip
+sudo pip3 install docker-compose
 
-
-pauseErr
-# docker
-echo '安装docker'
-apt -y remove docker docker-engine docker.io containerd runc
-apt -y update
-apt -y install \
-    apt-transport-https \
-    ca-certificates \
-    curl \
-    gnupg \
-    lsb-release
-
-pauseErr
-curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-pauseErr
-echo \
-  "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \
-  $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-pauseErr
-apt-get update
-apt-get install docker-ce docker-ce-cli containerd.io
-systemctl enable --now docker
-pauseErr
-echo '部署 xray'
-# xray
-docker rm -f nginx
-docker rm -f xray
-mkdir -p /docker/xray/
-cat <<EOF >  /docker/xray/config.json
+# Creating Xray profiles
+mkdir -p /typecho/xray/config
+cat <<EOF >  /typecho/xray/config/config.json
 {
     "log": {
         "loglevel": "warning"
@@ -90,7 +26,7 @@ cat <<EOF >  /docker/xray/config.json
                 "type": "field",
                 "ip": [
                     "geoip:private",
-		    "0.0.0.0/8",
+		            "0.0.0.0/8",
                     "10.0.0.0/8",
                     "100.64.0.0/10",
                     "127.0.0.0/8",
@@ -124,9 +60,10 @@ cat <<EOF >  /docker/xray/config.json
             "listen": "0.0.0.0",
             "protocol": "vless",
             "settings": {
+                "udp": true,
                 "clients": [
                     {
-                        "id": "$UUID"
+                        "id": "Your-U-U-ID-HERE"
                     }
                 ],
                 "decryption": "none"
@@ -135,7 +72,7 @@ cat <<EOF >  /docker/xray/config.json
                 "network": "ws",
                 "security": "none",
                 "wsSettings": {
-                    "path": "/$P"
+                    "path": "/one"
                 }
             }
         }
@@ -159,82 +96,24 @@ cat <<EOF >  /docker/xray/config.json
 }
 EOF
 
-docker run -d -p 10000:10000 -e TZ=Asia/Shanghai --name xray --restart=always -v /docker/xray:/etc/xray teddysun/xray
-
-echo 'xray 已部署完成'
-
-pauseErr
-
-echo '部署 nginx'
-
-# nginx
-# 创建映射目录
-mkdir -p /docker/nginx/html
-mkdir -p /docker/nginx/logs
-mkdir -p /docker/nginx/conf
-
-# 获取默认的配置文件
-docker run -d -p 80:80 --name nginx nginx:latest
-docker cp nginx:/etc/nginx /docker/nginx/conf
-cp -r  /docker/nginx/conf/nginx/* /docker/nginx/conf/
-rm -rf  /docker/nginx/conf/nginx
-docker rm -f nginx
-
-# 部署nginx
-docker run -p 80:80 -p 443:443 --link xray:xray -e TZ=Asia/Shanghai --name nginx --restart=always \
--v /docker/nginx/html:/usr/share/nginx/html \
--v /docker/nginx/logs:/var/log/nginx \
--v /docker/nginx/conf:/etc/nginx \
--d nginx:latest
-
-echo 'nginx 已部署完成'
-
-pauseErr
-
-echo '获取伪装网站'
-# html
-git clone https://github.com/star574/camouflage_html.git
-mv camouflage_html/* /docker/nginx/html/
-rm -rf camouflage_html
-
-pauseErr
-
-echo '为' ${DOMAIN} '申请证书'
-# acme.sh ssl
-curl  https://get.acme.sh | sh -s email=my@example.com
-
-pauseErr
-source ~/.bashrc
-
-mkdir -p  /etc/nginx/conf/ssl/${DOMAIN}
-
-pauseErr
-~/.acme.sh/acme.sh  --issue  -d ${DOMAIN} --webroot  /docker/nginx/html/
-
-mkdir -p  /docker/nginx/conf/ssl/${DOMAIN}/
-~/.acme.sh/acme.sh --install-cert -d ${DOMAIN}   \
---key-file       /docker/nginx/conf/ssl/${DOMAIN}/${DOMAIN}.key  \
---fullchain-file /docker/nginx/conf/ssl/${DOMAIN}/fullchain.pem \
---reloadcmd   "docker restart nginx"
-pauseErr
-echo '证书' ${DOMAIN}_key '部署成功'
-touch /docker/nginx/conf/conf.d/${DOMAIN}.conf
-cat <<EOF > /docker/nginx/conf/conf.d/${DOMAIN}.conf
+# Creating nginx profiles
+mkdir -p /typecho/nginx/conf.d
+cat <<EOF > /typecho/nginx/conf.d/default.conf
 server {
     listen      443 ssl;
     listen  [::]:443 ssl;
-    server_name  ${DOMAIN};
+    server_name  yourdomain.com;
 	
 	root   /usr/share/nginx/html;
 	index  index.html index.htm;
 	
-	ssl_certificate      /etc/nginx/ssl/${DOMAIN}/fullchain.pem;
-	ssl_certificate_key  /etc/nginx/ssl/${DOMAIN}/${DOMAIN}.key;
+	ssl_certificate      /etc/nginx/ssl/xray.crt;
+	ssl_certificate_key  /etc/nginx/ssl/xray.key;
 	ssl_protocols TLSv1.1 TLSv1.2;
 	ssl_session_timeout  5m;
 	ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE;
 	ssl_prefer_server_ciphers  on;
-	location  /${P} {
+	location  /one {
       	if (\$http_upgrade = "websocket") {
       	  	proxy_pass http://xray:10000;
       	}
@@ -251,14 +130,13 @@ server {
       	proxy_set_header X-Real-IP \$remote_addr;
       	proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
 	}
-
   location = /50x.html {
       root   /usr/share/nginx/html;
   }
 }
 server {
 	 listen 80;
-	 server_name ${DOMAIN};  
+	 server_name yourdomain.com;  
 	 rewrite ^(.*)$ https://\$host\$1 permanent;
 	 location / {
 	    index index.html index.htm;
@@ -266,23 +144,147 @@ server {
 }
 EOF
 
-pauseErr
+# Creating docker-compose.yml
+cat <<EOF >  /typecho/docker-compose.yml
+version: "3"
+services: 
+    xray:
+        image: teddysun/xray:1.7.5
+        container_name: xray
+        restart: always
+        environment: 
+            TZ: Asia/Shanghai
+        ports: 
+            - 443:443
+        volumes: 
+            - ./xray/config:/etc/xray
+            - ./xray/logs:/var/log/xray
+            - ./cert:/home/root/cert
+        depends_on: 
+            - acme
+        networks: 
+            - dockernet
 
-echo '同步时间'
-systemctl stop ntp.service 
-systemctl start ntp.service 
-date
-rm -rf /etc/localtime
-ln -s /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
-systemctl stop ntp.service 
-ntpdate us.pool.ntp.org 
-systemctl start ntp.service 
-date
+    php:
+        image: nat1vus/php-fpm-pgsql
+        container_name: php-fpm-pgsql
+        restart: always
+        environment: 
+            TZ: Asia/Shanghai
+        volumes: 
+            - ./nginx/www:/var/www
+        depends_on: 
+            - db
+        networks: 
+            - dockernet
+
+    web:
+        image: nginx:alpine
+        container_name: nginx
+        labels:
+            - sh.acme.autoload.domain=yourdomain.com
+        restart: always
+        environment: 
+            TZ: Asia/Shanghai
+        ports:
+            - 80:80
+        volumes: 
+            - ./nginx/conf.d:/etc/nginx/conf.d
+            - ./nginx/www:/var/www
+            - ./nginx/nginx_logs:/var/log/nginx
+            - ./nginx/web_logs:/etc/nginx/logs
+            - ./cert:/etc/nginx/ssl
+        depends_on: 
+            - php
+        networks: 
+            - dockernet
+
+    db:
+        image: postgres:alpine
+        container_name: pgsql
+        restart: always
+        environment: 
+            POSTGRES_USER: DB_USER
+            POSTGRES_PASSWORD: DB_PASS
+            POSTGRES_DB: DB_NAME
+            TZ: Asia/Shanghai
+        volumes:
+            - ./dbdata:/var/lib/postgresql/data
+        networks: 
+            - dockernet
+    acme:
+        image: neilpang/acme.sh
+        container_name: acme
+        restart: always
+        environment:
+            CF_Token: 'cf_token'
+            CF_Account_ID: 'cf_account_id'
+            CF_Zone_ID: 'cf_zonet_id'
+            DEPLOY_DOCKER_CONTAINER_LABEL: 'sh.acme.autoload.domain=yourdomain.com'
+            DEPLOY_DOCKER_CONTAINER_KEY_FILE: '/etc/nginx/ssl/xray.key'
+            DEPLOY_DOCKER_CONTAINER_FULLCHAIN_FILE: '/etc/nginx/ssl/xray.crt'
+            DEPLOY_DOCKER_CONTAINER_RELOAD_CMD: 'service nginx force-reload'
+            TZ: Asia/Shanghai
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock:ro
+            - ./acme/acme.sh:/acme.sh
+            - ./nginx/cert:/etc/nginx/ssl
+        command: daemon
+        networks: 
+            - dockernet
+
+networks: 
+    dockernet:
+EOF
+
+# Clone repository
+git clone https://github.com/weiwuji1/docker-xray-web.git
+cd docker-xray-web
+
+# Modify database credentials in docker-compose.yml
+read -p "Enter database username: " DB_USER
+read -p "Enter database password: " DB_PASS
+read -p "Enter database name: " DB_NAME
+read -p "Enter your domain name: " DOMAIN
+read -p "Enter your Cloudflare Account ID: " CF_ID
+read -p "Enter your Cloudflare Zone ID: " ZONE_ID
+read -p "Enter your Cloudflare Token: " CF_TOKEN
+
+sed -i "s/DB_USER/$DB_USER/g" docker-compose.yml
+sed -i "s/DB_PASS/$DB_PASS/g" docker-compose.yml
+sed -i "s/DB_NAME/$DB_NAME/g" docker-compose.yml
+sed -i "s/cf_account_id/$CF_ID/g" docker-compose.yml
+sed -i "s/cf_zonet_id/$ZONE_ID/g" docker-compose.yml
+sed -i "s/cf_token/$CF_TOKEN/g" docker-compose.yml
+sed -i "s/yourdomain.com/$DOMAIN/g" docker-compose-cf.yml
+
+# Modify domain name in nginx config
+sed -i "s/yourdomain.com/$DOMAIN/g" nginx/conf.d/default.conf
+
+# Modify UUID and email in Xray config
+read -p "Enter Xray UUID: " XRAY_UUID
+read -p "Enter email for Xray: " XRAY_EMAIL
+
+sed -i "s/Your-U-U-ID-HERE/$XRAY_UUID/g" xray/config/config.json
+sed -i "s/admin@yourdomain.com/$XRAY_EMAIL/g" xray/config/config.json
+
+# Create and start containers
+sudo docker compose up -d
+
+# Install certificate
+sudo docker exec -i acme acme.sh --register-account -m $XRAY_EMAIL
+sudo docker exec -i acme acme.sh --issue --dns dns_dp -d $DOMAIN -d *.$DOMAIN
+sudo docker exec -i acme acme.sh --deploy -d $DOMAIN  --deploy-hook docker
 
 
-mv /docker/nginx/conf/conf.d/default.conf /docker/nginx/conf/conf.d/default.conf.bak
+# Stop and start containers
+sudo docker compose down
+sudo chmod -R 777 nginx
+sudo docker compose up -d
 
-echo '重启docker'
-docker restart $(docker ps -qa)
-pauseErr
-echo '全部应用部署完成！'
+wget --no-check-certificate --content-disposition https://github.com/typecho/typecho/releases/download/v1.2.1-rc/typecho.zip -P /root/typecho/nginx/www
+cd /root/typecho/nginx/www
+unzip *.zip
+
+# Typecho 安装后可能需要在程序自动生成的 ./nginx/www/typecho/config.inc.php 中加入一行：define('__TYPECHO_SECURE__',true);
+# sed -i -e '$a\define("__TYPECHO_SECURE__", true);' ./nginx/www/typecho/config.inc.php
