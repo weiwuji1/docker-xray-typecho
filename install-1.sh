@@ -1,45 +1,12 @@
 #!/bin/bash
 
 # Install docker-ce and docker-compose
-#sudo yum install -y yum-utils
-#sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-#sudo yum install -y docker-ce docker-ce-cli containerd.io
-#sudo systemctl start docker
-#sudo systemctl enable docker
-
-#sudo yum install -y epel-release
-#sudo yum install -y python3-pip
-#sudo pip3 install docker-compose
-
-# 安装依赖关系
-sudo apt-get update
-sudo apt-get -y install \
-    apt-transport-https \
-    ca-certificates \
-    wget \
-    curl \
-    gnupg \
-    lsb-release
-
-# 添加Docker GPG密钥
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-
-# 配置 Docker 软件源
-echo \
-  "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-# 安装 Docker 引擎
-sudo apt-get update
-sudo apt-get -y install docker-ce docker-ce-cli containerd.io docker-compose-plugin
-
-# 添加用户到 docker 组
-sudo usermod -aG docker $USER
-
+sudo curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun
+sudo apt-get -y install docker-compose-plugin
 
 # Creating docker-compose.yml
-mkdir -p ./typecho
-cat <<EOF >  ./typecho/docker-compose.yml
+mkdir -p ./web
+cat <<EOF >  ./web/docker-compose.yml
 version: "3"
 services: 
     xray:
@@ -133,8 +100,8 @@ networks:
 EOF
 
 # Creating nginx profiles
-mkdir -p ./typecho/nginx/conf.d
-cat <<EOF > ./typecho/nginx/conf.d/default.conf
+mkdir -p ./web/nginx/conf.d
+cat <<EOF > ./web/nginx/conf.d/default.conf
 server {
     listen      443 ssl;
     listen  [::]:443 ssl;
@@ -182,8 +149,8 @@ EOF
 
 
 # Creating Xray profiles
-mkdir -p ./typecho/xray/config
-cat <<EOF >  ./typecho/xray/config/config.json
+mkdir -p ./web/xray/config
+cat <<EOF >  ./web/xray/config/config.json
 {
     "log": {
         "loglevel": "warning"
@@ -275,26 +242,26 @@ read -p "Enter your Cloudflare Account ID: " CF_ID
 read -p "Enter your Cloudflare Zone ID: " ZONE_ID
 read -p "Enter your Cloudflare Token: " CF_TOKEN
 
-sed -i "s/DB_USER/$DB_USER/g" ./typecho/docker-compose.yml
-sed -i "s/DB_PASS/$DB_PASS/g" ./typecho/docker-compose.yml
-sed -i "s/DB_NAME/$DB_NAME/g" ./typecho/docker-compose.yml
-sed -i "s/cf_account_id/$CF_ID/g" ./typecho/docker-compose.yml
-sed -i "s/cf_zonet_id/$ZONE_ID/g" ./typecho/docker-compose.yml
-sed -i "s/cf_token/$CF_TOKEN/g" ./typecho/docker-compose.yml
-sed -i "s/yourdomain.com/$DOMAIN/g" ./typecho/docker-compose.yml
+sed -i "s/DB_USER/$DB_USER/g" ./web/docker-compose.yml
+sed -i "s/DB_PASS/$DB_PASS/g" ./web/docker-compose.yml
+sed -i "s/DB_NAME/$DB_NAME/g" ./web/docker-compose.yml
+sed -i "s/cf_account_id/$CF_ID/g" ./web/docker-compose.yml
+sed -i "s/cf_zonet_id/$ZONE_ID/g" ./web/docker-compose.yml
+sed -i "s/cf_token/$CF_TOKEN/g" ./web/docker-compose.yml
+sed -i "s/yourdomain.com/$DOMAIN/g" ./web/docker-compose.yml
 
 # Modify domain name in nginx config
-sed -i "s/yourdomain.com/$DOMAIN/g" ./typecho/nginx/conf.d/default.conf
+sed -i "s/yourdomain.com/$DOMAIN/g" ./web/nginx/conf.d/default.conf
 
 # Modify UUID and email in Xray config
 read -p "Enter Xray UUID: " XRAY_UUID
 read -p "Enter email for Xray: " XRAY_EMAIL
 
-sed -i "s/Your-U-U-ID-HERE/$XRAY_UUID/g" ./typecho/xray/config/config.json
-sed -i "s/admin@yourdomain.com/$XRAY_EMAIL/g" ./typecho/xray/config/config.json
+sed -i "s/Your-U-U-ID-HERE/$XRAY_UUID/g" ./web/xray/config/config.json
+sed -i "s/admin@yourdomain.com/$XRAY_EMAIL/g" ./web/xray/config/config.json
 
 # Create and start containers
-cd ./typecho
+cd ./web
 sudo docker compose up -d
 
 # Install certificate
