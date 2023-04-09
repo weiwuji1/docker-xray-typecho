@@ -6,8 +6,8 @@ sudo apt-get -y install docker-compose-plugin
 sudo apt -y autoremove
 
 # Creating docker-compose.yml
-mkdir -p ./web
-cat <<EOF >  ./web/docker-compose.yml
+sudo mkdir -p ./web
+sudo cat <<EOF >  ./web/docker-compose.yml
 version: "3"
 services: 
     xray:
@@ -100,8 +100,8 @@ networks:
 EOF
 
 # Creating nginx profiles
-mkdir -p ./web/nginx/conf.d
-cat <<EOF > ./web/nginx/conf.d/default.conf
+sudo mkdir -p ./web/nginx/conf.d
+sudo cat <<EOF > ./web/nginx/conf.d/default.conf
 server {
     listen 443 ssl http2;
     listen [::]:443 ssl http2;
@@ -152,8 +152,8 @@ EOF
 
 
 # Creating Xray profiles
-mkdir -p ./web/xray/config
-cat <<EOF >  ./web/xray/config/config.json
+sudo mkdir -p ./web/xray/config
+sudo cat <<EOF >  ./web/xray/config/config.json
 {
   "log": {
     "access": "/var/log/xray/access.log",
@@ -266,9 +266,9 @@ sudo docker compose up -d
 wget --no-check-certificate --content-disposition https://github.com/typecho/typecho/releases/download/v1.2.1-rc/typecho.zip -P ./nginx/www
 cd ./nginx/www
 sudo apt-get install unzip
-unzip -q typecho.zip
+sudo unzip -q typecho.zip
 sudo chmod -R 777 ./usr/uploads
-rm -f ./typecho.zip
+sudo rm -f ./typecho.zip
 
 # Typecho 安装后可能需要在程序自动生成的 ./nginx/www/typecho/config.inc.php 中加入一行：define('__TYPECHO_SECURE__',true);
 # sed -i -e '$a\define("__TYPECHO_SECURE__", true);' ./nginx/www/typecho/config.inc.php
