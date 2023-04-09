@@ -49,7 +49,7 @@ services:
             TZ: Asia/Shanghai
         ports:
             - 80:80
-	    - 443:443
+	        - 443:443
         volumes: 
             - ./nginx/conf.d:/etc/nginx/conf.d
             - ./nginx/www:/var/www
