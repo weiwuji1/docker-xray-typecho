@@ -163,7 +163,7 @@ cat <<EOF >  ./web/xray/config/config.json
   "inbounds": [
     {
       "port": 20114,
-      "listen": "127.0.0.1",
+      "listen": "0.0.0.0",
       "tag": "VLESS-in",
       "protocol": "VLESS",
       "settings": {
@@ -241,9 +241,10 @@ sed -i "s/YourDomain/$DOMAIN/g" ./web/nginx/conf.d/default.conf
 
 # Modify UUID and email in Xray config
 read -p "输入Xray的UUID: " XRAY_UUID
+#read -p "输入Xray的WS伪装路径: " XRAY_PATH
 
 sed -i "s/UUID/$XRAY_UUID/g" ./web/xray/config/config.json
-# sed -i "s/admin@yourdomain.com/$XRAY_EMAIL/g" ./web/xray/config/config.json
+#sed -i "s/10db92a7f3//$XRAY_PATH/g" ./web/xray/config/config.json
 
 # Create and start containers
 cd ./web
