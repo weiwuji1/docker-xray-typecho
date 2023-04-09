@@ -120,7 +120,7 @@ server {
 
     location / {
         index index.php;
-        try_files \$uri $uri/ /index.php?q=$uri&$args;
+        try_files \$uri \$uri/ \/index.php?q=$uri&$args;
     }
 
     location ~ \.php$ {
@@ -222,12 +222,12 @@ cat <<EOF >  ./web/xray/config/config.json
 EOF
 
 # Modify database credentials in docker-compose.yml
-read -p "Enter database username: " DB_USER
-read -p "Enter database password: " DB_PASS
-read -p "Enter database name: " DB_NAME
-read -p "Enter your domain name: " DOMAIN
-read -p "Enter your Email for Cloudflare Acme Xray: " XRAY_EMAIL
-read -p "Enter your Cloudflare API key: " CF_KEY
+read -p "输入数据库用户名: " DB_USER
+read -p "输入数据库密码: " DB_PASS
+read -p "输入数据库名: " DB_NAME
+read -p "输入域名: " DOMAIN
+read -p "输入用于注册Cloudflare和Acme和Xray的Email: " XRAY_EMAIL
+read -p "输入Cloudflare的全局API key: " CF_KEY
 
 sed -i "s/DB_USER/$DB_USER/g" ./web/docker-compose.yml
 sed -i "s/DB_PASS/$DB_PASS/g" ./web/docker-compose.yml
@@ -240,7 +240,7 @@ sed -i "s/YourDomain/$DOMAIN/g" ./web/docker-compose.yml
 sed -i "s/YourDomain/$DOMAIN/g" ./web/nginx/conf.d/default.conf
 
 # Modify UUID and email in Xray config
-read -p "Enter Xray UUID: " XRAY_UUID
+read -p "输入Xray的UUID: " XRAY_UUID
 
 sed -i "s/UUID/$XRAY_UUID/g" ./web/xray/config/config.json
 # sed -i "s/admin@yourdomain.com/$XRAY_EMAIL/g" ./web/xray/config/config.json
