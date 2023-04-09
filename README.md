@@ -8,7 +8,7 @@ wget -N --no-check-certificate -q -O install.sh "https://raw.githubusercontent.c
 需要根据提示填写相关参数。
 
 ### Nginx 前置
-最近不知是不是用vchatGPT比较多的原因，443端口老是被封，借鉴wulabing大大的Nginx前置脚本自己简单制作了daocker+typecho的一键脚本，用`VLESS+TCP+TLS+Nginx+WebSocket`协议试验一段时间
+最近不知是不是用chatGPT比较多的原因，443端口老是被封，借鉴wulabing大大的Nginx前置脚本自己简单制作了daocker+typecho的一键脚本，用`VLESS+TCP+TLS+Nginx+WebSocket`协议试验一段时间
 ```
 wget -N --no-check-certificate -q -O install-1.sh "https://raw.githubusercontent.com/weiwuji1/docker-xray-typecho/main/install-1.sh" && chmod +x install-1.sh && bash install-1.sh
 ```
