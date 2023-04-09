@@ -3,7 +3,7 @@
 # Install docker-ce and docker-compose
 sudo curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun
 sudo apt-get -y install docker-compose-plugin
-sudo apt autoremove
+sudo apt -y autoremove
 
 # Creating docker-compose.yml
 mkdir -p ./web
@@ -120,12 +120,12 @@ server {
 
     location / {
         index index.php;
-        try_files \$uri \$uri/ \/index.php?q=$uri&$args;
+        try_files \$uri \$uri/ /index.php?q=\$uri&\$args;
     }
 
     location ~ \.php$ {
         fastcgi_pass php-fpm-pgsql:9000;
-        fastcgi_param SCRIPT_FILENAME \$document_root$fastcgi_script_name;
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
         include fastcgi_params;
     }
 
@@ -145,7 +145,7 @@ server {
     listen 80;
     listen [::]:80;
     server_name YourDomain;
-    return 301 https://\$http_host$request_uri;
+    return 301 https://\$http_host\$request_uri;
 }
 
 EOF
