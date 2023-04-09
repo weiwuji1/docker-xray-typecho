@@ -250,6 +250,8 @@ sudo docker exec -i acme acme.sh --register-account -m $XRAY_EMAIL
 sudo docker exec -i acme acme.sh --issue --dns dns_cf -d $DOMAIN -d *.$DOMAIN
 sudo docker exec -i acme acme.sh --deploy -d $DOMAIN  --deploy-hook docker
 
+#临时解决nginx证书问题
+cp -r /root/web/cert/. /root/web/nginx/cert
 
 # Stop and start containers
 sudo docker compose down
