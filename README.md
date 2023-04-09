@@ -8,3 +8,9 @@ sudo chmod +x install.sh
 ```
 脚本通过acme.sh自动申请部署证书，本示例以DNSPod解析域名为例。
 需要根据提示填写相关参数。
+
+### Nginx 前置
+支持配置方式`VLESS + TCP + TLS + Nginx + WebSocket`
+```
+wget -N --no-check-certificate -q -O install-1.sh "https://raw.githubusercontent.com/weiwuji1/docker-xray-typecho/main/install-1.sh" && chmod +x install-1.sh && bash install-1.sh
+```
