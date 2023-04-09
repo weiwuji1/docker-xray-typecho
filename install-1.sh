@@ -16,7 +16,7 @@ services:
         environment: 
             TZ: Asia/Shanghai
         ports: 
-            - 10000:10000
+            - 20114:20114
         volumes: 
             - ./xray/config:/etc/xray
             - ./xray/logs:/var/log/xray
@@ -79,9 +79,8 @@ services:
         container_name: acme
         restart: always
         environment:
-            CF_Token: 'cf_token'
-            CF_Account_ID: 'cf_account_id'
-            CF_Zone_ID: 'cf_zonet_id'
+            CF_Key: 'cf_key'
+            CF_Email: 'cf_email'
             DEPLOY_DOCKER_CONTAINER_LABEL: 'sh.acme.autoload.domain=yourdomain.com'
             DEPLOY_DOCKER_CONTAINER_KEY_FILE: '/etc/nginx/ssl/xray.key'
             DEPLOY_DOCKER_CONTAINER_FULLCHAIN_FILE: '/etc/nginx/ssl/xray.crt'
@@ -152,84 +151,69 @@ EOF
 mkdir -p ./web/xray/config
 cat <<EOF >  ./web/xray/config/config.json
 {
-    "log": {
-        "loglevel": "warning"
-    },
-    "api": null,
-    "routing": {
-        "domainStrategy": "IPOnDemand",
-        "rules": [
-            {
-                "type": "field",
-                "ip": [
-                    "geoip:private",
-		    "0.0.0.0/8",
-                    "10.0.0.0/8",
-                    "100.64.0.0/10",
-                    "127.0.0.0/8",
-                    "169.254.0.0/16",
-                    "172.16.0.0/12",
-                    "192.0.0.0/24",
-                    "192.0.2.0/24",
-                    "192.168.0.0/16",
-                    "198.18.0.0/15",
-                    "198.51.100.0/24",
-                    "203.0.113.0/24",
-                    "::1/128",
-                    "fc00::/7",
-                    "fe80::/10"
-                ],
-                "outboundTag": "blocked"
-            },
-	    {
-                "type": "field",
-                "protocol": [
-                    "bittorrent"
-                ],
-                "outboundTag": "blocked"
-            }
-        ]
-    },
-    "policy": {},
-    "inbounds": [
-        {
-            "port": 10000,
-            "listen": "0.0.0.0",
-            "protocol": "vless",
-            "settings": {
-                "udp": true,
-                "clients": [
-                    {
-                        "id": "Your-U-U-ID-HERE"
-                    }
-                ],
-                "decryption": "none"
-            },
-            "streamSettings": {
-                "network": "ws",
-                "security": "none",
-                "wsSettings": {
-                    "path": "/one"
-                }
-            }
+  "log": {
+    "access": "/var/log/xray/access.log",
+    "error": "/var/log/xray/error.log",
+    "loglevel": "warning"
+  },
+  "inbounds": [
+    {
+      "port": 20114,
+      "listen": "127.0.0.1",
+      "tag": "VLESS-in",
+      "protocol": "VLESS",
+      "settings": {
+        "udp": true,
+	"clients": [
+          {
+            "id": "Your-U-U-ID-HERE",
+            "alterId": 0
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "ws",
+        "wsSettings": {
+          "path": "/10db92a7f3/"
         }
-    ],
-    "outbounds": [
-        {
-            "protocol": "freedom",
-            "settings": {
-                "domainStrategy": "UseIP"
-            },
-            "tag": "direct"
-        },
-        {
-            "protocol": "blackhole",
-            "tag": "block"
-        }
-    ],
-    "transport": {},
-    "stats": null,
-    "reverse": {}
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "protocol": "freedom",
+      "settings": {},
+      "tag": "direct"
+    },
+    {
+      "protocol": "blackhole",
+      "settings": {},
+      "tag": "blocked"
+    }
+  ],
+  "dns": {
+    "servers": [
+      "https+local://1.1.1.1/dns-query",
+      "1.1.1.1",
+      "1.0.0.1",
+      "8.8.8.8",
+      "8.8.4.4",
+      "localhost"
+    ]
+  },
+  "routing": {
+    "domainStrategy": "AsIs",
+    "rules": [
+      {
+        "type": "field",
+        "inboundTag": [
+          "VLESS-in"
+        ],
+        "outboundTag": "direct"
+      }
+    ]
+  }
 }
 EOF
 
@@ -238,16 +222,14 @@ read -p "Enter database username: " DB_USER
 read -p "Enter database password: " DB_PASS
 read -p "Enter database name: " DB_NAME
 read -p "Enter your domain name: " DOMAIN
-read -p "Enter your Cloudflare Account ID: " CF_ID
-read -p "Enter your Cloudflare Zone ID: " ZONE_ID
-read -p "Enter your Cloudflare Token: " CF_TOKEN
+read -p "Enter your Email for Cloudflare Acme Xray: " XRAY_EMAIL
+read -p "Enter your Cloudflare API key: " CF_KEY
 
 sed -i "s/DB_USER/$DB_USER/g" ./web/docker-compose.yml
 sed -i "s/DB_PASS/$DB_PASS/g" ./web/docker-compose.yml
 sed -i "s/DB_NAME/$DB_NAME/g" ./web/docker-compose.yml
-sed -i "s/cf_account_id/$CF_ID/g" ./web/docker-compose.yml
-sed -i "s/cf_zonet_id/$ZONE_ID/g" ./web/docker-compose.yml
-sed -i "s/cf_token/$CF_TOKEN/g" ./web/docker-compose.yml
+sed -i "s/cf_email/$XRAY_EMAIL/g" ./web/docker-compose.yml
+sed -i "s/cf_key/$CF_KEY/g" ./web/docker-compose.yml
 sed -i "s/yourdomain.com/$DOMAIN/g" ./web/docker-compose.yml
 
 # Modify domain name in nginx config
@@ -255,7 +237,6 @@ sed -i "s/yourdomain.com/$DOMAIN/g" ./web/nginx/conf.d/default.conf
 
 # Modify UUID and email in Xray config
 read -p "Enter Xray UUID: " XRAY_UUID
-read -p "Enter email for Xray: " XRAY_EMAIL
 
 sed -i "s/Your-U-U-ID-HERE/$XRAY_UUID/g" ./web/xray/config/config.json
 sed -i "s/admin@yourdomain.com/$XRAY_EMAIL/g" ./web/xray/config/config.json
