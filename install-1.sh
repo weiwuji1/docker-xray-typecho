@@ -43,7 +43,7 @@ services:
         image: nginx:alpine
         container_name: nginx
         labels:
-            - sh.acme.autoload.domain=yourdomain.com
+            - sh.acme.autoload.domain=YourDomain
         restart: always
         environment: 
             TZ: Asia/Shanghai
@@ -81,7 +81,7 @@ services:
         environment:
             CF_Key: 'cf_key'
             CF_Email: 'cf_email'
-            DEPLOY_DOCKER_CONTAINER_LABEL: 'sh.acme.autoload.domain=yourdomain.com'
+            DEPLOY_DOCKER_CONTAINER_LABEL: 'sh.acme.autoload.domain=YourDomain'
             DEPLOY_DOCKER_CONTAINER_KEY_FILE: '/etc/nginx/ssl/xray.key'
             DEPLOY_DOCKER_CONTAINER_FULLCHAIN_FILE: '/etc/nginx/ssl/xray.crt'
             DEPLOY_DOCKER_CONTAINER_RELOAD_CMD: 'service nginx force-reload'
@@ -101,49 +101,52 @@ EOF
 # Creating nginx profiles
 mkdir -p ./web/nginx/conf.d
 cat <<EOF > ./web/nginx/conf.d/default.conf
-    server {
-	listen 443 ssl http2;
-	listen [::]:443 ssl http2;
-        ssl_certificate       /etc/nginx/ssl/xray.crt;
-        ssl_certificate_key   /etc/nginx/ssl/xray.key;
-        ssl_protocols         TLSv1.2 TLSv1.3;
-        ssl_ecdh_curve        X25519:P-256:P-384:P-521;
-        server_name           yourdomain.com;
-        index index.html index.htm index.php;
-        root  /var/www/typecho;
-        error_page 400 = /400.html;
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    ssl_certificate       /etc/nginx/ssl/xray.crt;
+    ssl_certificate_key   /etc/nginx/ssl/xray.key;
+    ssl_protocols         TLSv1.2 TLSv1.3;
+    ssl_ecdh_curve        X25519:P-256:P-384:P-521;
+    server_name           YourDomain;
+    index index.html index.htm index.php;
+    root  /var/www;
+    error_page 400 = /400.html;
 
-        ssl_stapling on;
-        ssl_stapling_verify on;
-        add_header Strict-Transport-Security "max-age=63072000" always;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    add_header Strict-Transport-Security "max-age=63072000" always;
 
-        if (!-e $request_filename) {
-            rewrite ^(.*)$ /index.php$1 last;
-        }
-	location ~ .*\.php(\/.*)*$ {
-            include fastcgi.conf;
-            fastcgi_split_path_info ^(.+?.php)(/.*)$;
-            fastcgi_pass  php-fpm-pgsql:9000;
-        }
-
-	location /10db92a7f3/
-        {
-            proxy_redirect off;
-	proxy_pass http://xray:20114;
-            proxy_http_version 1.1;
-            proxy_set_header X-Real-IP \$remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header Upgrade $http_upgrade;
-            proxy_set_header Connection "upgrade";
-            proxy_set_header Host $http_host;
-        }
-}
-    server {
-        listen 80;
-        listen [::]:80;
-        server_name yourdomain.com;
-        return 301 https://$http_host$request_uri;
+    location / {
+        index index.php;
+        try_files $uri $uri/ /index.php?q=$uri&$args;
     }
+
+    location ~ \.php$ {
+        fastcgi_pass php-fpm-pgsql:9000;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+    location /10db92a7f3/ {
+        proxy_redirect off;
+        proxy_pass http://xray:20114;
+        proxy_http_version 1.1;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;       
+    }
+}
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name YourDomain;
+    return 301 https://;
+}
+
 EOF
 
 
@@ -166,7 +169,7 @@ cat <<EOF >  ./web/xray/config/config.json
         "udp": true,
 	"clients": [
           {
-            "id": "Your-U-U-ID-HERE",
+            "id": "UUID",
             "alterId": 0
           }
         ],
@@ -230,16 +233,16 @@ sed -i "s/DB_PASS/$DB_PASS/g" ./web/docker-compose.yml
 sed -i "s/DB_NAME/$DB_NAME/g" ./web/docker-compose.yml
 sed -i "s/cf_email/$XRAY_EMAIL/g" ./web/docker-compose.yml
 sed -i "s/cf_key/$CF_KEY/g" ./web/docker-compose.yml
-sed -i "s/yourdomain.com/$DOMAIN/g" ./web/docker-compose.yml
+sed -i "s/YourDomain/$DOMAIN/g" ./web/docker-compose.yml
 
 # Modify domain name in nginx config
-sed -i "s/yourdomain.com/$DOMAIN/g" ./web/nginx/conf.d/default.conf
+sed -i "s/YourDomain/$DOMAIN/g" ./web/nginx/conf.d/default.conf
 
 # Modify UUID and email in Xray config
 read -p "Enter Xray UUID: " XRAY_UUID
 
-sed -i "s/Your-U-U-ID-HERE/$XRAY_UUID/g" ./web/xray/config/config.json
-sed -i "s/admin@yourdomain.com/$XRAY_EMAIL/g" ./web/xray/config/config.json
+sed -i "s/UUID/$XRAY_UUID/g" ./web/xray/config/config.json
+# sed -i "s/admin@yourdomain.com/$XRAY_EMAIL/g" ./web/xray/config/config.json
 
 # Create and start containers
 cd ./web
@@ -262,6 +265,8 @@ wget --no-check-certificate --content-disposition https://github.com/typecho/typ
 cd ./nginx/www
 sudo apt-get install unzip
 unzip *.zip
+sudo chmod -R 777 ./usr/uploads
+
 
 # Typecho 安装后可能需要在程序自动生成的 ./nginx/www/typecho/config.inc.php 中加入一行：define('__TYPECHO_SECURE__',true);
 # sed -i -e '$a\define("__TYPECHO_SECURE__", true);' ./nginx/www/typecho/config.inc.php
