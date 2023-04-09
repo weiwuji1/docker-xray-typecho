@@ -3,6 +3,7 @@
 # Install docker-ce and docker-compose
 sudo curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun
 sudo apt-get -y install docker-compose-plugin
+sudo apt autoremove
 
 # Creating docker-compose.yml
 mkdir -p ./web
@@ -119,12 +120,12 @@ server {
 
     location / {
         index index.php;
-        try_files $uri $uri/ /index.php?q=$uri&$args;
+        try_files \$uri $uri/ /index.php?q=$uri&$args;
     }
 
     location ~ \.php$ {
         fastcgi_pass php-fpm-pgsql:9000;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param SCRIPT_FILENAME \$document_root$fastcgi_script_name;
         include fastcgi_params;
     }
 
@@ -132,11 +133,11 @@ server {
         proxy_redirect off;
         proxy_pass http://xray:20114;
         proxy_http_version 1.1;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;       
+        proxy_set_header Host \$host;       
     }
 }
 
@@ -144,7 +145,7 @@ server {
     listen 80;
     listen [::]:80;
     server_name YourDomain;
-    return 301 https://;
+    return 301 https://\$http_host$request_uri;
 }
 
 EOF
