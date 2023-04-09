@@ -266,9 +266,9 @@ sudo docker compose up -d
 wget --no-check-certificate --content-disposition https://github.com/typecho/typecho/releases/download/v1.2.1-rc/typecho.zip -P ./nginx/www
 cd ./nginx/www
 sudo apt-get install unzip
-unzip *.zip
+unzip -q typecho.zip
 sudo chmod -R 777 ./usr/uploads
-
+rm -f ./typecho.zip
 
 # Typecho 安装后可能需要在程序自动生成的 ./nginx/www/typecho/config.inc.php 中加入一行：define('__TYPECHO_SECURE__',true);
 # sed -i -e '$a\define("__TYPECHO_SECURE__", true);' ./nginx/www/typecho/config.inc.php
