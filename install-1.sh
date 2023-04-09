@@ -102,49 +102,49 @@ EOF
 # Creating nginx profiles
 mkdir -p ./web/nginx/conf.d
 cat <<EOF > ./web/nginx/conf.d/default.conf
-server {
-    listen      443 ssl;
-    listen  [::]:443 ssl;
-    server_name  yourdomain.com;
-	
-	root   /var/www/typecho/;
-	index  index.html index.htm index.php;
-	
-	ssl_certificate      /etc/nginx/ssl/xray.crt;
-	ssl_certificate_key  /etc/nginx/ssl/xray.key;
-	ssl_protocols TLSv1.1 TLSv1.2;
-	ssl_session_timeout  5m;
-	ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE;
-	ssl_prefer_server_ciphers  on;
-	location  /one {
-      	if (\$http_upgrade = "websocket") {
-      	  	proxy_pass http://xray:10000;
-      	}
-      	# 仅当请求为 WebSocket 时才反代到 V2Ray
-      	if (\$http_upgrade != "websocket") {
-      	 #否则显示正常网页
-	      	rewrite ^/(.*)$ /index.php last;
-      	}
-      	proxy_redirect off;
-      	proxy_http_version 1.1;
-      	proxy_set_header Upgrade \$http_upgrade;
-      	proxy_set_header Connection "upgrade";
-      	proxy_set_header Host \$http_host;
-      	proxy_set_header X-Real-IP \$remote_addr;
-      	proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-	}
-  location = /50x.html {
-      root   /var/www/typecho/;
-  }
+    server {
+	listen 443 ssl http2;
+	listen [::]:443 ssl http2;
+        ssl_certificate       /etc/nginx/ssl/xray.crt;
+        ssl_certificate_key   /etc/nginx/ssl/xray.key;
+        ssl_protocols         TLSv1.2 TLSv1.3;
+        ssl_ecdh_curve        X25519:P-256:P-384:P-521;
+        server_name           yourdomain.com;
+        index index.html index.htm index.php;
+        root  /var/www/typecho;
+        error_page 400 = /400.html;
+
+        ssl_stapling on;
+        ssl_stapling_verify on;
+        add_header Strict-Transport-Security "max-age=63072000" always;
+
+        if (!-e $request_filename) {
+            rewrite ^(.*)$ /index.php$1 last;
+        }
+	location ~ .*\.php(\/.*)*$ {
+            include fastcgi.conf;
+            fastcgi_split_path_info ^(.+?.php)(/.*)$;
+            fastcgi_pass  php-fpm-pgsql:9000;
+        }
+
+	location /10db92a7f3/
+        {
+            proxy_redirect off;
+	proxy_pass http://xray:20114;
+            proxy_http_version 1.1;
+            proxy_set_header X-Real-IP \$remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host $http_host;
+        }
 }
-server {
-	 listen 80;
-	 server_name yourdomain.com;  
-	 rewrite ^(.*)$ https://\$host\$1 permanent;
-	 location / {
-	    index index.html index.htm index.php;
-	  }
-}
+    server {
+        listen 80;
+        listen [::]:80;
+        server_name yourdomain.com;
+        return 301 https://$http_host$request_uri;
+    }
 EOF
 
 
