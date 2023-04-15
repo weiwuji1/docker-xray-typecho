@@ -118,10 +118,6 @@ server {
     ssl_stapling_verify on;
     add_header Strict-Transport-Security "max-age=63072000" always;
 
-    if (!-e \$request_filename) {
-        rewrite ^(.*)\$ /index.php\$1 last;
-    }
-
     location / {
         index index.php;
         try_files \$uri \$uri/ /index.php?q=\$uri&\$args;
