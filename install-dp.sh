@@ -1,9 +1,13 @@
 #!/bin/bash
 
+# Install command line tools 
+sudo apt update
+sudo apt-get -y install curl wget unzip
+
 # Install docker-ce and docker-compose
-#sudo curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun
-sudo yum -y install docker-compose-plugin
-#sudo apt -y autoremove
+sudo curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun
+sudo apt-get -y install docker-compose-plugin
+sudo apt -y autoremove
 
 # Creating docker-compose.yml
 sudo mkdir -p ./web
@@ -258,7 +262,7 @@ sudo docker exec -i acme acme.sh --issue --dns dns_dp -d $DOMAIN -d *.$DOMAIN
 sudo docker exec -i acme acme.sh --deploy -d $DOMAIN  --deploy-hook docker
 
 #临时解决nginx证书问题
-cp -r /root/web/cert/. /root/web/nginx/cert
+#cp -r /root/web/cert/. /root/web/nginx/cert
 
 # Stop and start containers
 sudo docker compose down
@@ -267,7 +271,6 @@ sudo docker compose up -d
 
 wget --no-check-certificate --content-disposition https://github.com/typecho/typecho/releases/download/v1.2.1-rc/typecho.zip -P ./nginx/www
 cd ./nginx/www
-sudo yum install unzip
 sudo unzip -q typecho.zip
 sudo chmod -R 777 ./usr/uploads
 sudo rm -f ./typecho.zip
