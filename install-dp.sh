@@ -257,6 +257,7 @@ cd ./web
 sudo docker compose up -d
 
 # Install certificate
+sudo docker exec -i acme acme.sh --upgrade -b dev
 sudo docker exec -i acme acme.sh --register-account -m $XRAY_EMAIL
 sudo docker exec -i acme acme.sh --issue --dns dns_dp -d $DOMAIN -d *.$DOMAIN
 sudo docker exec -i acme acme.sh --deploy -d $DOMAIN  --deploy-hook docker
