@@ -95,7 +95,7 @@ services:
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock:ro
             - ./acme/acme.sh:/acme.sh
-            - ./nginx/cert:/etc/nginx/ssl
+            - ./cert:/etc/nginx/ssl
         command: daemon
         networks: 
             - dockernet
