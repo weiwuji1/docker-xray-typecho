@@ -250,8 +250,8 @@ read -p "输入Xray的UUID: " XRAY_UUID
 read -p "输入Xray的WS伪装路径: " XRAY_PATH
 
 sed -i "s/UUID/$XRAY_UUID/g" ./web/xray/config/config.json
-sed -i "s/Ws_Path//$XRAY_PATH/g" ./web/xray/config/config.json
-sed -i "s/Ws_Path//$XRAY_PATH/g" ./web/nginx/conf.d/default.conf
+sed -i "s/Ws_Path/$XRAY_PATH/g" ./web/xray/config/config.json
+sed -i "s/Ws_Path/$XRAY_PATH/g" ./web/nginx/conf.d/default.conf
 
 # Create and start containers
 cd ./web
