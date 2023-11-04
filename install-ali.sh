@@ -21,7 +21,7 @@ services:
         environment: 
             TZ: Asia/Shanghai
         ports: 
-	    - 20114:20114
+	        - 20114:20114
             - 20114:20114/udp
         volumes: 
             - ./xray/config:/etc/xray
