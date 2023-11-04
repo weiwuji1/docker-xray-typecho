@@ -22,7 +22,7 @@ services:
             TZ: Asia/Shanghai
         ports: 
 	    - 20114:20114
-	    - 20114:20114/udp
+            - 20114:20114/udp
         volumes: 
             - ./xray/config:/etc/xray
             - ./xray/logs:/var/log/xray
