@@ -5,7 +5,7 @@ sudo apt update
 sudo apt-get -y install curl wget unzip
 
 # Install docker-ce and docker-compose
-#sudo curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun
+sudo curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun
 sudo apt-get -y install docker-compose-plugin
 sudo apt -y autoremove
 
