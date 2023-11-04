@@ -134,7 +134,7 @@ server {
         include fastcgi_params;
     }
 
-    location WS_Path {
+    location /a1a3630b5d/ {
         proxy_redirect off;
         proxy_pass http://xray:20114;
         proxy_http_version 1.1;
@@ -184,7 +184,7 @@ sudo cat <<EOF >  ./web/xray/config/config.json
       "streamSettings": {
         "network": "ws",
         "wsSettings": {
-          "path": "WS_Path"
+          "path": "/a1a3630b5d/"
         }
       }
     }
@@ -238,7 +238,7 @@ read -p "输入阿里云的Ali_Secret: " Ali_Secret
 sed -i "s/DB_USER/$DB_USER/g" ./web/docker-compose.yml
 sed -i "s/DB_PASS/$DB_PASS/g" ./web/docker-compose.yml
 sed -i "s/DB_NAME/$DB_NAME/g" ./web/docker-compose.yml
-sed -i "s/cf_key/$Ali_Key/g" ./web/docker-compose.yml
+sed -i "s/ali_key/$Ali_Key/g" ./web/docker-compose.yml
 sed -i "s/ali_secret/$Ali_Secret/g" ./web/docker-compose.yml
 sed -i "s/YourDomain/$DOMAIN/g" ./web/docker-compose.yml
 
@@ -247,11 +247,11 @@ sed -i "s/YourDomain/$DOMAIN/g" ./web/nginx/conf.d/default.conf
 
 # Modify UUID and email in Xray config
 read -p "输入Xray的UUID: " XRAY_UUID
-read -p "输入Xray的WS伪装路径: " XRAY_PATH
+#read -p "输入Xray的WS伪装路径: " XRAY_PATH
 
 sed -i "s/UUID/$XRAY_UUID/g" ./web/xray/config/config.json
-sed -i "s/Ws_Path/$XRAY_PATH/g" ./web/xray/config/config.json
-sed -i "s/Ws_Path/$XRAY_PATH/g" ./web/nginx/conf.d/default.conf
+#sed -i "s/Ws_Path/$XRAY_PATH/g" ./web/xray/config/config.json
+#sed -i "s/Ws_Path/$XRAY_PATH/g" ./web/nginx/conf.d/default.conf
 
 # Create and start containers
 cd ./web
