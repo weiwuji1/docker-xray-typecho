@@ -22,7 +22,7 @@ services:
             TZ: Asia/Shanghai
         ports: 
             - 20114:20114
-	    - 20114:20114/udp
+            - 20114:20114/udp
         volumes: 
             - ./xray/config:/etc/xray
             - ./xray/logs:/var/log/xray
@@ -134,7 +134,7 @@ server {
         include fastcgi_params;
     }
 
-    location /10db92a7f3/ {
+    location Ws_Path {
         proxy_redirect off;
         proxy_pass http://xray:20114;
         proxy_http_version 1.1;
@@ -184,7 +184,7 @@ sudo cat <<EOF >  ./web/xray/config/config.json
       "streamSettings": {
         "network": "ws",
         "wsSettings": {
-          "path": "/10db92a7f3/"
+          "path": "Ws_Path"
         }
       }
     }
@@ -246,10 +246,11 @@ sed -i "s/YourDomain/$DOMAIN/g" ./web/nginx/conf.d/default.conf
 
 # Modify UUID and email in Xray config
 read -p "输入Xray的UUID: " XRAY_UUID
-#read -p "输入Xray的WS伪装路径: " XRAY_PATH
+read -p "输入Xray的WS伪装路径: " XRAY_PATH
 
 sed -i "s/UUID/$XRAY_UUID/g" ./web/xray/config/config.json
-#sed -i "s/10db92a7f3//$XRAY_PATH/g" ./web/xray/config/config.json
+sed -i "s#Ws_Path#$XRAY_PATH#g" ./web/xray/config/config.json
+sed -i "s#Ws_Path#$XRAY_PATH#g" ./web/nginx/conf.d/default.conf
 
 # Create and start containers
 cd ./web
