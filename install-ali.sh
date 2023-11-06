@@ -14,7 +14,7 @@ sudo mkdir -p ./web
 sudo cat <<EOF >  ./web/docker-compose.yml
 version: "3"
 services: 
-    xray:
+    xray: 
         image: teddysun/xray
         container_name: xray
         restart: always
@@ -32,7 +32,7 @@ services:
         networks: 
             - dockernet
 
-    php:
+    php: 
         image: nat1vus/php-fpm-pgsql
         container_name: php-fpm-pgsql
         restart: always
@@ -45,7 +45,7 @@ services:
         networks: 
             - dockernet
 
-    web:
+    web: 
         image: nginx:alpine
         container_name: nginx
         labels:
@@ -67,7 +67,7 @@ services:
         networks: 
             - dockernet
 
-    db:
+    db: 
         image: postgres:alpine
         container_name: pgsql
         restart: always
@@ -76,17 +76,17 @@ services:
             POSTGRES_PASSWORD: DB_PASS
             POSTGRES_DB: DB_NAME
             TZ: Asia/Shanghai
-        ports:
+        ports: 
             - 55432:5432
-	volumes:
+	volumes: 
             - ./dbdata:/var/lib/postgresql/data
         networks: 
             - dockernet
-    acme:
+    acme: 
         image: neilpang/acme.sh
         container_name: acme
         restart: always
-        environment:
+        environment: 
             Ali_Key: 'ali_key'
             Ali_Secret: 'ali_secret'
             DEPLOY_DOCKER_CONTAINER_LABEL: 'sh.acme.autoload.domain=YourDomain'
@@ -94,7 +94,7 @@ services:
             DEPLOY_DOCKER_CONTAINER_FULLCHAIN_FILE: '/etc/nginx/ssl/xray.crt'
             DEPLOY_DOCKER_CONTAINER_RELOAD_CMD: 'service nginx force-reload'
             TZ: Asia/Shanghai
-        volumes:
+        volumes: 
             - /var/run/docker.sock:/var/run/docker.sock:ro
             - ./acme/acme.sh:/acme.sh
             - ./cert:/etc/nginx/ssl
@@ -103,7 +103,7 @@ services:
             - dockernet
 
 networks: 
-    dockernet:
+    dockernet: 
 EOF
 
 # Creating nginx profiles
