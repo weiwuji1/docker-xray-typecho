@@ -82,6 +82,7 @@ services:
             - ./dbdata:/var/lib/postgresql/data
         networks: 
             - dockernet
+
     acme: 
         image: neilpang/acme.sh
         container_name: acme
