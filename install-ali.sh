@@ -76,7 +76,7 @@ services:
             POSTGRES_PASSWORD: DB_PASS
             POSTGRES_DB: DB_NAME
             TZ: Asia/Shanghai
-        ports: 
+        ports:
             - 55432:5432
 	volumes:
             - ./dbdata:/var/lib/postgresql/data
