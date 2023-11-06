@@ -77,7 +77,7 @@ services:
             POSTGRES_DB: DB_NAME
             TZ: Asia/Shanghai
         ports: 
-            - 55432:5432        
+            - 55432:5432
 	volumes:
             - ./dbdata:/var/lib/postgresql/data
         networks: 
