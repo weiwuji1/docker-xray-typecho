@@ -76,7 +76,9 @@ services:
             POSTGRES_PASSWORD: DB_PASS
             POSTGRES_DB: DB_NAME
             TZ: Asia/Shanghai
-        volumes:
+        ports: 
+            - 55432:5432
+        volumes: 
             - ./dbdata:/var/lib/postgresql/data
         networks: 
             - dockernet
@@ -108,8 +110,8 @@ EOF
 sudo mkdir -p ./web/nginx/conf.d
 sudo cat <<EOF > ./web/nginx/conf.d/default.conf
 server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;
+    listen 443 ssl; http2 on;
+    listen [::]:443 ssl;
     ssl_certificate       /etc/nginx/ssl/xray.crt;
     ssl_certificate_key   /etc/nginx/ssl/xray.key;
     ssl_protocols         TLSv1.2 TLSv1.3;
@@ -118,6 +120,7 @@ server {
     index index.html index.htm index.php;
     root  /var/www;
     error_page 400 = /400.html;
+    #resolver 1.1.1.1;
 
     ssl_stapling on;
     ssl_stapling_verify on;
