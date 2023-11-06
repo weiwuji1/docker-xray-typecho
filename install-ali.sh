@@ -78,7 +78,7 @@ services:
             TZ: Asia/Shanghai
         ports: 
             - 55432:5432
-	volumes: 
+        volumes: 
             - ./dbdata:/var/lib/postgresql/data
         networks: 
             - dockernet
