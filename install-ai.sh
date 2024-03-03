@@ -158,7 +158,7 @@ services:
       - 80:80
 
   typecho:
-    image: joyqi/typecho
+    image: 80x86/typecho
     restart: always
     environment:
       - DB_TYPE=pgsql
