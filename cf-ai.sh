@@ -18,8 +18,8 @@ fi
 
 # 2. 用 Docker-compose 部署 Xray 和 Web 服务（Nginx + PostgreSQL + Typecho）
 echo "正在部署 Xray 和 Web 服务..."
-mkdir xray
-cd xray
+mkdir web
+cd web
 
 # 3. 生成 Nginx 配置文件
 echo "请输入域名"
@@ -31,7 +31,7 @@ read -p "域名：" EMAIL
 echo "请输入 WebSocket 路径："
 read -p "WebSocket 路径：" your_path
 
-cat > nginx.conf << EOF
+cat > ./nginx/nginx.conf << EOF
 server {
   listen 80;
   server_name $domain;
@@ -59,8 +59,8 @@ server {
     proxy_set_header X-Forwarded-Host \$host;
   }
 
-  ssl_certificate /etc/nginx/nginx.crt;
-  ssl_certificate_key /etc/nginx/nginx.key;
+  ssl_certificate /etc/nginx/cert/nginx.crt;
+  ssl_certificate_key /etc/nginx/cert/nginx.key;
 }
 EOF
 
@@ -68,7 +68,7 @@ EOF
 echo "请输入 Xray 的 UUID："
 read -p "UUID：" xray_uuid
 
-cat > config.json << EOF
+cat > ./xray/config.json << EOF
 {
   "inbounds": [
     {
@@ -111,8 +111,8 @@ cat > config.json << EOF
       "tlsSettings": {
         "certificates": [
           {
-            "certificateFile": "/etc/xray/config.json/cert.pem",
-            "keyFile": "/etc/xray/config.json/key.pem"
+            "certificateFile": "/etc/xray/cert/cert.pem",
+            "keyFile": "/etc/xray/cert/key.pem"
           }
         ]
       }
@@ -138,9 +138,8 @@ services:
     image: teddysun/xray
     restart: always
     volumes:
-      - ./config.json:/etc/xray/config.json
-      - /root/xray/nginx.crt:/etc/xray/config.json/cert.pem
-      - /root/xray/nginx.key:/etc/xray/config.json/key.pem
+      - ./xray:/etc/xray
+      - /root/web/cert:/etc/xray/cert
     ports:
       - 443:443
       - 1080:1080      
@@ -150,9 +149,8 @@ services:
     image: nginx
     restart: always
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      - /root/xray/nginx.crt:/etc/nginx/nginx.crt
-      - /root/xray/nginx.key:/etc/nginx/nginx.key
+      - ./nginx:/etc/nginx/conf.d
+      - /root/web/cert:/etc/nginx/cert
       - ./typecho:/var/www/html
     ports:
       - 80:80
@@ -206,7 +204,7 @@ export CF_Email="$EMAIL"
 echo "正在申请和安装证书..."
 ~/.acme.sh/acme.sh --register-account -m $EMAIL
 ~/.acme.sh/acme.sh --issue --dns dns_cf -d $domain -d *.$domain --keylength ec-256 --debug
-~/.acme.sh/acme.sh --installcert -d $domain --ecc --fullchain-file /root/xray/nginx.crt --key-file /root/xray/nginx.key
+~/.acme.sh/acme.sh --installcert -d $domain --ecc --fullchain-file /root/web/cert/nginx.crt --key-file /root/web/cert/nginx.key
 
 # 启动 Docker-compose 服务
 echo "正在启动 Docker-compose 服务..."
