@@ -206,7 +206,7 @@ export DP_Key="$dnspod_api_key"
 # 使用 acme.sh 申请和安装证书
 echo "正在申请和安装证书..."
 ~/.acme.sh/acme.sh --register-account -m $EMAIL
-~/.acme.sh/acme.sh --issue --dns dns_dp -d $domain --keylength ec-256
+~/.acme.sh/acme.sh --issue --dns dns_dp -d $domain -d *.$domain --keylength ec-256 --debug
 ~/.acme.sh/acme.sh --installcert -d $domain --ecc --fullchain-file /root/xray/nginx.crt --key-file /root/xray/nginx.key
 
 # 启动 Docker-compose 服务
