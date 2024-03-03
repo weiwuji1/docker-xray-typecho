@@ -31,7 +31,7 @@ read -p "域名：" EMAIL
 echo "请输入 WebSocket 路径："
 read -p "WebSocket 路径：" your_path
 
-cat > ./nginx/nginx.conf << EOF
+cat <<EOF > ./nginx/nginx.conf
 server {
   listen 80;
   server_name $domain;
@@ -68,7 +68,7 @@ EOF
 echo "请输入 Xray 的 UUID："
 read -p "UUID：" xray_uuid
 
-cat > ./xray/config.json << EOF
+cat <<EOF > ./xray/config.json
 {
   "inbounds": [
     {
