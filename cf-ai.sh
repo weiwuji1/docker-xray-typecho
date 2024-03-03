@@ -203,7 +203,7 @@ export CF_Email="$EMAIL"
 # 使用 acme.sh 申请和安装证书
 echo "正在申请和安装证书..."
 ~/.acme.sh/acme.sh --register-account -m $EMAIL
-~/.acme.sh/acme.sh --issue --dns dns_cf -d $domain -d *.$domain --keylength ec-256 --debug
+~/.acme.sh/acme.sh --issue --dns dns_cf -d $domain -d *.$domain --keylength ec-256
 ~/.acme.sh/acme.sh --installcert -d $domain --ecc --fullchain-file /root/web/cert/nginx.crt --key-file /root/web/cert/nginx.key
 
 # 启动 Docker-compose 服务
