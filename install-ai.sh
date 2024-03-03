@@ -22,8 +22,11 @@ mkdir xray
 cd xray
 
 # 3. 生成 Nginx 配置文件
-echo "请输入域名："
+echo "请输入域名"
 read -p "域名：" domain
+
+echo "请输入注册证书邮箱："
+read -p "域名：" EMAIL
 
 echo "请输入 WebSocket 路径："
 read -p "WebSocket 路径：" your_path
@@ -155,7 +158,7 @@ services:
       - 80:80
 
   typecho:
-    image: typecho/typecho
+    image: joyqi/typecho
     restart: always
     environment:
       - DB_TYPE=pgsql
@@ -202,6 +205,7 @@ export DP_Key="$dnspod_api_key"
 
 # 使用 acme.sh 申请和安装证书
 echo "正在申请和安装证书..."
+~/.acme.sh/acme.sh --register-account -m $EMAIL
 ~/.acme.sh/acme.sh --issue --dns dns_dp -d $domain --keylength ec-256
 ~/.acme.sh/acme.sh --installcert -d $domain --ecc --fullchain-file /root/xray/nginx.crt --key-file /root/xray/nginx.key
 
