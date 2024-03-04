@@ -196,6 +196,7 @@ read -p "CloudFlare API 密钥：" CF_api_key
 
 # 安装 acme.sh
 echo "正在安装 acme.sh..."
+sudo apt install socat
 curl https://get.acme.sh | sh
 
 # 设置 Cloudflare API 密钥
@@ -208,6 +209,7 @@ echo "正在申请和安装证书..."
 ~/.acme.sh/acme.sh --register-account -m $EMAIL
 ~/.acme.sh/acme.sh --issue --dns dns_cf -d $domain -d *.$domain --keylength ec-256
 ~/.acme.sh/acme.sh --installcert -d $domain --ecc --fullchain-file /root/web/cert/nginx.crt --key-file /root/web/cert/nginx.key
+# 加--force强制更新
 
 # 启动 Docker compose 服务
 echo "正在启动 Docker compose 服务..."
