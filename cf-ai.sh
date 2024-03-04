@@ -114,8 +114,8 @@ cat > ./web/xray/config.json << EOF
       "tlsSettings": {
         "certificates": [
           {
-            "certificateFile": "/etc/xray/cert/cert.pem",
-            "keyFile": "/etc/xray/cert/key.pem"
+            "certificateFile": "/home/root/cert/nginx.crt",
+            "keyFile": "/home/root/cert/nginx.key"
           }
         ]
       }
@@ -142,7 +142,7 @@ services:
     restart: always
     volumes:
       - /root/web/xray:/etc/xray
-      - /root/web/cert:/etc/xray/cert
+      - /root/web/cert:/home/root/cert
     ports:
       - 443:443
       - 1080:1080      
@@ -207,8 +207,8 @@ export CF_Email="$EMAIL"
 # 使用 acme.sh 申请和安装证书
 echo "正在申请和安装证书..."
 ~/.acme.sh/acme.sh --register-account -m $EMAIL
-~/.acme.sh/acme.sh --issue --dns dns_cf -d $domain -d *.$domain --keylength ec-256
-~/.acme.sh/acme.sh --installcert -d $domain --ecc --fullchain-file /root/web/cert/nginx.crt --key-file /root/web/cert/nginx.key --force
+~/.acme.sh/acme.sh --issue --dns dns_cf -d $domain -d *.$domain --keylength ec-256 --force
+~/.acme.sh/acme.sh --installcert -d $domain --ecc --fullchain-file /root/web/cert/nginx.crt --key-file /root/web/cert/nginx.key
 # 加--force强制更新
 
 # 启动 Docker compose 服务
