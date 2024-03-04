@@ -5,7 +5,7 @@ if ! command -v docker &> /dev/null; then
   # 安装 Docker
   echo "正在安装 Docker..."
   sudo apt update
-  sudo apt install -y docker.io
+  sudo curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun
 fi
 
 # 检查 Docker Compose 是否已经安装
