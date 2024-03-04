@@ -18,20 +18,23 @@ fi
 
 # 2. 用 Docker-compose 部署 Xray 和 Web 服务（Nginx + PostgreSQL + Typecho）
 echo "正在部署 Xray 和 Web 服务..."
-mkdir web
-cd web
+# 创建配置文件目录
+mkdir -p ./web/nginx
+mkdir -p ./web/xray
+mkdir -p ./web/cert
+mkdir -p ./web/typecho
 
 # 3. 生成 Nginx 配置文件
 echo "请输入域名"
 read -p "域名：" domain
 
 echo "请输入注册证书邮箱："
-read -p "域名：" EMAIL
+read -p "邮箱：" EMAIL
 
 echo "请输入 WebSocket 路径："
 read -p "WebSocket 路径：" your_path
 
-cat <<EOF > ./nginx/nginx.conf
+cat > ./nginx/nginx.conf << EOF
 server {
   listen 80;
   server_name $domain;
@@ -68,7 +71,7 @@ EOF
 echo "请输入 Xray 的 UUID："
 read -p "UUID：" xray_uuid
 
-cat <<EOF > ./xray/config.json
+cat > ./xray/config.json << EOF
 {
   "inbounds": [
     {
@@ -187,15 +190,15 @@ volumes:
   typecho:
 EOF
 
-# 6. 通过 acme.sh 自动申请和续签证书（使用 DNSPod 解析域名）
+# 6. 通过 acme.sh 自动申请和续签证书（使用 Cloudflare 解析域名）
 echo "请输入以下参数："
-read -p "DNSPod API 密钥：" CF_api_key
+read -p "CloudFlare API 密钥：" CF_api_key
 
 # 安装 acme.sh
 echo "正在安装 acme.sh..."
 curl https://get.acme.sh | sh
 
-# 设置 DNSPod API 密钥
+# 设置 Cloudflare API 密钥
 echo "正在设置 CloudFlare API 密钥..."
 export CF_Key="$CF_api_key"
 export CF_Email="$EMAIL"
