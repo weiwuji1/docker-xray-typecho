@@ -5,213 +5,289 @@ if ! command -v docker &> /dev/null; then
   # 安装 Docker
   echo "正在安装 Docker..."
   sudo apt update
-  sudo apt install -y docker.io
+  sudo apt-get -y install curl wget unzip
+  sudo curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun
 fi
 
-# 检查 Docker-compose 是否已经安装
-if ! command -v docker-compose &> /dev/null; then
-  # 安装 Docker-compose
-  echo "正在安装 Docker-compose..."
-  sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-  sudo chmod +x /usr/local/bin/docker-compose
+# 检查 Docker Compose 是否已经安装
+if ! command -v docker compose &> /dev/null; then
+  # 安装 Docker Compose
+  echo "正在安装 Docker Compose..."
+  sudo apt-get -y install docker-compose-plugin
 fi
 
-# 2. 用 Docker-compose 部署 Xray 和 Web 服务（Nginx + PostgreSQL + Typecho）
-echo "正在部署 Xray 和 Web 服务..."
-mkdir xray
-cd xray
+# 创建 docker-compose.yml配置文件
+echo "正在创建 docker-compose.yml..."
+sudo mkdir -p ./web
+sudo cat <<EOF >  ./web/docker-compose.yml
+version: "3"
+services: 
+    xray:
+        image: teddysun/xray
+        container_name: xray
+        restart: always
+        environment: 
+            TZ: Asia/Shanghai
+        ports: 
+            - 20114:20114
+            - 20114:20114/udp
+        volumes: 
+            - ./xray/config:/etc/xray
+            - ./xray/logs:/var/log/xray
+            - ./cert:/home/root/cert
+        depends_on: 
+            - acme
+        networks: 
+            - dockernet
 
-# 3. 生成 Nginx 配置文件
-echo "请输入域名"
-read -p "域名：" domain
+    php:
+        image: nat1vus/php-fpm-pgsql
+        container_name: php-fpm-pgsql
+        restart: always
+        environment: 
+            TZ: Asia/Shanghai
+        volumes: 
+            - ./nginx/www:/var/www
+        depends_on: 
+            - db
+        networks: 
+            - dockernet
 
-echo "请输入注册证书邮箱："
-read -p "域名：" EMAIL
+    web:
+        image: nginx:alpine
+        container_name: nginx
+        labels:
+            - sh.acme.autoload.domain=YourDomain
+        restart: always
+        environment: 
+            TZ: Asia/Shanghai
+        ports:
+            - 80:80
+            - 443:443
+        volumes: 
+            - ./nginx/conf.d:/etc/nginx/conf.d
+            - ./nginx/www:/var/www
+            - ./nginx/nginx_logs:/var/log/nginx
+            - ./nginx/web_logs:/etc/nginx/logs
+            - ./cert:/etc/nginx/ssl
+        depends_on: 
+            - php
+        networks: 
+            - dockernet
 
-echo "请输入 WebSocket 路径："
-read -p "WebSocket 路径：" your_path
+    db:
+        image: postgres:alpine
+        container_name: pgsql
+        restart: always
+        environment: 
+            POSTGRES_USER: DB_USER
+            POSTGRES_PASSWORD: DB_PASS
+            POSTGRES_DB: DB_NAME
+            TZ: Asia/Shanghai
+        ports: 
+            - 55432:5432
+        volumes: 
+            - ./dbdata:/var/lib/postgresql/data
+        networks: 
+            - dockernet
+    acme:
+        image: neilpang/acme.sh
+        container_name: acme
+        restart: always
+        environment:
+            CF_Key: 'cf_key'
+            CF_Email: 'cf_email'
+            DEPLOY_DOCKER_CONTAINER_LABEL: 'sh.acme.autoload.domain=YourDomain'
+            DEPLOY_DOCKER_CONTAINER_KEY_FILE: '/etc/nginx/ssl/xray.key'
+            DEPLOY_DOCKER_CONTAINER_FULLCHAIN_FILE: '/etc/nginx/ssl/xray.crt'
+            DEPLOY_DOCKER_CONTAINER_RELOAD_CMD: 'service nginx force-reload'
+            TZ: Asia/Shanghai
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock:ro
+            - ./acme/acme.sh:/acme.sh
+            - ./cert:/etc/nginx/ssl
+        command: >
+      sh -c "acme.sh --register-account --accountemail 'cf_email' &&
+      acme.sh --issue --dns dns_cf -d YourDomain &&
+      acme.sh --installcert -d YourDomain -d *.YourDomain --keypath /etc/nginx/ssl/xray.key --fullchainpath /etc/nginx/ssl/xray.crt --reloadcmd 'service nginx reload' &&
+      acme.sh --upgrade --auto-upgrade &&
+      acme.sh --renew -d YourDomain --force"
+        networks: 
+            - dockernet
 
-cat > nginx.conf << EOF
-server {
-  listen 80;
-  server_name $domain;
-
-  location / {
-    proxy_pass http://typecho:8080;
-    proxy_set_header Host \$host;
-    proxy_set_header X-Real-IP \$remote_addr;
-    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto \$scheme;
-    proxy_set_header X-Forwarded-Host \$host;
-    proxy_set_header Upgrade \$http_upgrade;
-    proxy_set_header Connection "upgrade";
-  }
-
-  location $your_path {
-    proxy_pass http://xray:443;
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade \$http_upgrade;
-    proxy_set_header Connection "upgrade";
-    proxy_set_header Host \$http_host;
-    proxy_set_header X-Real-IP \$remote_addr;
-    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto \$scheme;
-    proxy_set_header X-Forwarded-Host \$host;
-  }
-
-  ssl_certificate /etc/nginx/nginx.crt;
-  ssl_certificate_key /etc/nginx/nginx.key;
-}
+networks: 
+    dockernet:
 EOF
 
-# 4. 生成 Xray 配置文件
-echo "请输入 Xray 的 UUID："
-read -p "UUID：" xray_uuid
+# 创建nginx配置文件
+echo "正在创建 nginx配置文件..."
+sudo mkdir -p ./web/nginx/conf.d
+sudo cat <<EOF > ./web/nginx/conf.d/default.conf
+server {
+    listen 443 ssl; http2 on;
+    listen [::]:443 ssl;
+    ssl_certificate       /etc/nginx/ssl/xray.crt;
+    ssl_certificate_key   /etc/nginx/ssl/xray.key;
+    ssl_protocols         TLSv1.2 TLSv1.3;
+    ssl_ecdh_curve        X25519:P-256:P-384:P-521;
+    server_name           YourDomain;
+    index index.html index.htm index.php;
+    root  /var/www;
+    error_page 400 = /400.html;
+    #resolver 1.1.1.1;
 
-cat > config.json << EOF
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    add_header Strict-Transport-Security "max-age=63072000" always;
+
+    location / {
+        index index.php;
+        try_files \$uri \$uri/ /index.php?q=\$uri&\$args;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass php-fpm-pgsql:9000;
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+    location Ws_Path {
+        proxy_redirect off;
+        proxy_pass http://xray:20114;
+        proxy_http_version 1.1;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;       
+    }
+}
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name YourDomain;
+    return 301 https://\$http_host\$request_uri;
+}
+
+EOF
+
+
+# 创建Xray配置文件
+echo "正在创建 Xray配置文件..."
+sudo mkdir -p ./web/xray/config
+sudo cat <<EOF >  ./web/xray/config/config.json
 {
+  "log": {
+    "access": "/var/log/xray/access.log",
+    "error": "/var/log/xray/error.log",
+    "loglevel": "warning"
+  },
   "inbounds": [
     {
-      "port": 1080,
-      "protocol": "socks",
+      "port": 20114,
+      "listen": "0.0.0.0",
+      "tag": "VLESS-in",
+      "protocol": "VLESS",
       "settings": {
-        "auth": "noauth",
-        "udp": true
-      },
-      "sniffing": {
-        "enabled": true,
-        "destOverride": ["http", "tls"]
-      }
-    },
-    {
-      "port": 443,
-      "protocol": "vless",
-      "settings": {
-        "clients": [
+        "udp": true,
+	"clients": [
           {
-            "id": "$xray_uuid",
-            "flow": "xtls-rprx-direct",
-            "encryption": "none"
+            "id": "UUID",
+            "alterId": 0
           }
         ],
-        "decryption": "none",
-        "fallbacks": [
-          {
-            "dest": 1080,
-            "xver": 1
-          }
-        ]
+        "decryption": "none"
       },
       "streamSettings": {
         "network": "ws",
         "wsSettings": {
-          "path": "$your_path"
+          "path": "Ws_Path"
         }
-      },
-      "tlsSettings": {
-        "certificates": [
-          {
-            "certificateFile": "/etc/xray/config.json/cert.pem",
-            "keyFile": "/etc/xray/config.json/key.pem"
-          }
-        ]
       }
     }
   ],
   "outbounds": [
     {
       "protocol": "freedom",
-      "settings": {}
+      "settings": {},
+      "tag": "direct"
+    },
+    {
+      "protocol": "blackhole",
+      "settings": {},
+      "tag": "blocked"
     }
-  ]
+  ],
+  "dns": {
+    "servers": [
+      "https+local://1.1.1.1/dns-query",
+      "1.1.1.1",
+      "1.0.0.1",
+      "8.8.8.8",
+      "8.8.4.4",
+      "localhost"
+    ]
+  },
+  "routing": {
+    "domainStrategy": "AsIs",
+    "rules": [
+      {
+        "type": "field",
+        "inboundTag": [
+          "VLESS-in"
+        ],
+        "outboundTag": "direct"
+      }
+    ]
+  }
 }
 EOF
 
-# 5. 生成 Docker-compose 配置文件
-echo "请输入 PostgreSQL 密码："
-read -sp "PostgreSQL 密码：" postgres_password
+# 设置相关参数
+echo "设置数据库等相关参数..."
+read -p "输入数据库用户名: " DB_USER
+read -p "输入数据库密码: " DB_PASS
+read -p "输入数据库名: " DB_NAME
+read -p "输入域名: " DOMAIN
+read -p "输入用于注册Cloudflare和Acme和Xray的Email: " XRAY_EMAIL
+read -p "输入Cloudflare的全局API key: " CF_KEY
 
-cat > docker-compose.yml << EOF
-version: '3'
-services:
-  xray:
-    image: teddysun/xray
-    restart: always
-    volumes:
-      - ./config.json:/etc/xray/config.json
-      - /root/xray/nginx.crt:/etc/xray/config.json/cert.pem
-      - /root/xray/nginx.key:/etc/xray/config.json/key.pem
-    ports:
-      - 443:443
-      - 1080:1080      
-      - 443:443/udp
+sed -i "s/DB_USER/$DB_USER/g" ./web/docker-compose.yml
+sed -i "s/DB_PASS/$DB_PASS/g" ./web/docker-compose.yml
+sed -i "s/DB_NAME/$DB_NAME/g" ./web/docker-compose.yml
+sed -i "s/cf_email/$XRAY_EMAIL/g" ./web/docker-compose.yml
+sed -i "s/cf_key/$CF_KEY/g" ./web/docker-compose.yml
+sed -i "s/YourDomain/$DOMAIN/g" ./web/docker-compose.yml
 
-  nginx:
-    image: nginx
-    restart: always
-    volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      - /root/xray/nginx.crt:/etc/nginx/nginx.crt
-      - /root/xray/nginx.key:/etc/nginx/nginx.key
-      - ./typecho:/var/www/html
-    ports:
-      - 80:80
+# Modify domain name in nginx config
+sed -i "s/YourDomain/$DOMAIN/g" ./web/nginx/conf.d/default.conf
 
-  typecho:
-    image: 80x86/typecho
-    restart: always
-    environment:
-      - DB_TYPE=pgsql
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=typecho
-      - DB_USER=typecho
-      - DB_PASSWD=$postgres_password
-    volumes:
-      - ./typecho:/var/www/html
-    depends_on:
-      - postgres
-    ports:
-      - 8080:80
+# Modify UUID and email in Xray config
+read -p "输入Xray的UUID: " XRAY_UUID
+read -p "输入Xray的WS伪装路径: " XRAY_PATH
 
-  postgres:
-    image: postgres
-    restart: always
-    environment:
-      - POSTGRES_PASSWORD=$postgres_password
-      - POSTGRES_DB=typecho
-      - POSTGRES_USER=typecho
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
+sed -i "s/UUID/$XRAY_UUID/g" ./web/xray/config/config.json
+sed -i "s#Ws_Path#$XRAY_PATH#g" ./web/xray/config/config.json
+sed -i "s#Ws_Path#$XRAY_PATH#g" ./web/nginx/conf.d/default.conf
 
-volumes:
-  postgres-data:
-  typecho:
-EOF
+# 部署容器
+echo "正在部署容器..."
+cd ./web
+sudo chmod -R 777 nginx
+sudo docker compose up -d
 
-# 6. 通过 acme.sh 自动申请和续签证书（使用 DNSPod 解析域名）
-echo "请输入以下参数："
-read -p "DNSPodAPI 密钥 ID：" dnspod_api_key_id
-read -p "DNSPod API 密钥：" dnspod_api_key
-
-# 安装 acme.sh
-echo "正在安装 acme.sh..."
-curl https://get.acme.sh | sh
-
-# 设置 DNSPod API 密钥
-echo "正在设置 DNSPod API 密钥..."
-export DP_Id="$dnspod_api_key_id"
-export DP_Key="$dnspod_api_key"
-
-# 使用 acme.sh 申请和安装证书
-echo "正在申请和安装证书..."
-~/.acme.sh/acme.sh --register-account -m $EMAIL
-~/.acme.sh/acme.sh --issue --dns dns_dp -d $domain -d *.$domain --keylength ec-256 --debug
-~/.acme.sh/acme.sh --installcert -d $domain --ecc --fullchain-file /root/xray/nginx.crt --key-file /root/xray/nginx.key
-
-# 启动 Docker-compose 服务
-echo "正在启动 Docker-compose 服务..."
-sudo docker-compose up -d
+# 安装typecho
+echo "正在准备安装typech..."
+wget --no-check-certificate --content-disposition https://github.com/typecho/typecho/releases/download/v1.2.1/typecho.zip -P ./nginx/www
+cd ./nginx/www
+sudo unzip -q typecho.zip
+sudo chmod -R 777 ./usr/uploads
+sudo rm -f ./typecho.zip
 
 # 完成部署
-echo "部署完成！"
+sudo apt -y autoremove
+echo "部署完成，请在web中完成typecho安装！"
+
+# Typecho 安装后可能需要在程序自动生成的 ./nginx/www/typecho/config.inc.php 中加入一行：define('__TYPECHO_SECURE__',true);
+# sed -i -e '$a\define("__TYPECHO_SECURE__", true);' ./nginx/www/typecho/config.inc.php
