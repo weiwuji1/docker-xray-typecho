@@ -92,9 +92,7 @@ cat > ./web/xray/config.json << EOF
       "settings": {
         "clients": [
           {
-            "id": "$xray_uuid",
-            "flow": "xtls-rprx-direct",
-            "encryption": "none"
+            "id": "$xray_uuid"
           }
         ],
         "decryption": "none",
