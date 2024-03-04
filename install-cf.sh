@@ -249,7 +249,7 @@ export CF_Email="$XRAY_EMAIL"
 echo "正在申请和安装证书..."
 ~/.acme.sh/acme.sh --register-account -m $XRAY_EMAIL
 ~/.acme.sh/acme.sh --issue --dns dns_cf -d $DOMAIN -d *.$DOMAIN --keylength ec-256 --force
-~/.acme.sh/acme.sh --installcert -d $DOMAIN --ecc --fullchain-file /root/web/cert/nginx.crt --key-file /root/web/cert/nginx.key
+~/.acme.sh/acme.sh --installcert -d $DOMAIN --ecc --fullchain-file /root/web/cert/xray.crt --key-file /root/web/cert/xray.key
 # 加--force强制更新
 
 # Create and start containers
