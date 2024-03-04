@@ -8,15 +8,15 @@ if ! command -v docker &> /dev/null; then
   sudo apt install -y docker.io
 fi
 
-# 检查 Docker-compose 是否已经安装
-if ! command -v docker-compose &> /dev/null; then
-  # 安装 Docker-compose
-  echo "正在安装 Docker-compose..."
-  sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+# 检查 Docker Compose 是否已经安装
+if ! command -v docker compose &> /dev/null; then
+  # 安装 Docker Compose
+  echo "正在安装 Docker Compose..."
+  sudo curl -L "https://github.com/docker/compose/releases/download/v2.0.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
   sudo chmod +x /usr/local/bin/docker-compose
 fi
 
-# 2. 用 Docker-compose 部署 Xray 和 Web 服务（Nginx + PostgreSQL + Typecho）
+# 2. 用 Docker compose 部署 Xray 和 Web 服务（Nginx + PostgreSQL + Typecho）
 echo "正在部署 Xray 和 Web 服务..."
 # 创建配置文件目录
 mkdir -p ./web/nginx
@@ -209,9 +209,9 @@ echo "正在申请和安装证书..."
 ~/.acme.sh/acme.sh --issue --dns dns_cf -d $domain -d *.$domain --keylength ec-256
 ~/.acme.sh/acme.sh --installcert -d $domain --ecc --fullchain-file /root/web/cert/nginx.crt --key-file /root/web/cert/nginx.key
 
-# 启动 Docker-compose 服务
-echo "正在启动 Docker-compose 服务..."
-sudo docker-compose up -d
+# 启动 Docker compose 服务
+echo "正在启动 Docker compose 服务..."
+sudo docker compose up -d
 
 # 完成部署
 echo "部署完成！"
