@@ -237,6 +237,7 @@ sed -i "s#Ws_Path#$XRAY_PATH#g" ./web/nginx/conf.d/default.conf
 
 # 安装 acme.sh
 echo "正在安装 acme.sh..."
+sudo mkdir -p ./web/cert
 sudo apt install socat
 curl https://get.acme.sh | sh
 
