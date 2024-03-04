@@ -27,8 +27,6 @@ services:
             - ./xray/config:/etc/xray
             - ./xray/logs:/var/log/xray
             - ./cert:/home/root/cert
-        depends_on: 
-            - acme
         networks: 
             - dockernet
 
@@ -80,25 +78,6 @@ services:
             - 55432:5432
         volumes: 
             - ./dbdata:/var/lib/postgresql/data
-        networks: 
-            - dockernet
-    acme:
-        image: neilpang/acme.sh
-        container_name: acme
-        restart: always
-        environment:
-            CF_Key: 'cf_key'
-            CF_Email: 'cf_email'
-            DEPLOY_DOCKER_CONTAINER_LABEL: 'sh.acme.autoload.domain=YourDomain'
-            DEPLOY_DOCKER_CONTAINER_KEY_FILE: '/etc/nginx/ssl/xray.key'
-            DEPLOY_DOCKER_CONTAINER_FULLCHAIN_FILE: '/etc/nginx/ssl/xray.crt'
-            DEPLOY_DOCKER_CONTAINER_RELOAD_CMD: 'service nginx force-reload'
-            TZ: Asia/Shanghai
-        volumes:
-            - /var/run/docker.sock:/var/run/docker.sock:ro
-            - ./acme/acme.sh:/acme.sh
-            - ./cert:/etc/nginx/ssl
-        command: daemon
         networks: 
             - dockernet
 
@@ -255,25 +234,31 @@ sed -i "s/UUID/$XRAY_UUID/g" ./web/xray/config/config.json
 sed -i "s#Ws_Path#$XRAY_PATH#g" ./web/xray/config/config.json
 sed -i "s#Ws_Path#$XRAY_PATH#g" ./web/nginx/conf.d/default.conf
 
+
+# 安装 acme.sh
+echo "正在安装 acme.sh..."
+sudo apt install socat
+curl https://get.acme.sh | sh
+
+# 设置 Cloudflare API 密钥
+echo "正在设置 CloudFlare API 密钥..."
+export CF_Key="$CF_KEY"
+export CF_Email="$XRAY_EMAIL"
+
+# 使用 acme.sh 申请和安装证书
+echo "正在申请和安装证书..."
+~/.acme.sh/acme.sh --register-account -m $XRAY_EMAIL
+~/.acme.sh/acme.sh --issue --dns dns_cf -d $DOMAIN -d *.$DOMAIN --keylength ec-256 --force
+~/.acme.sh/acme.sh --installcert -d $DOMAIN --ecc --fullchain-file /root/web/cert/nginx.crt --key-file /root/web/cert/nginx.key
+# 加--force强制更新
+
 # Create and start containers
 cd ./web
-sudo docker compose up -d
-
-# Install certificate
-sudo docker exec -i acme acme.sh --upgrade -b dev
-sudo docker exec -i acme acme.sh --register-account -m $XRAY_EMAIL
-sudo docker exec -i acme acme.sh --issue --dns dns_cf -d $DOMAIN -d *.$DOMAIN
-sudo docker exec -i acme acme.sh --deploy -d $DOMAIN  --deploy-hook docker
-
-#临时解决nginx证书问题
-#cp -r /root/web/cert/. /root/web/nginx/cert
-
-# Stop and start containers
-sudo docker compose down
 sudo chmod -R 777 nginx
 sudo docker compose up -d
 
-wget --no-check-certificate --content-disposition https://github.com/typecho/typecho/releases/download/v1.2.1-rc/typecho.zip -P ./nginx/www
+# Typecho 安装准备
+wget --no-check-certificate --content-disposition https://github.com/typecho/typecho/releases/download/v1.2.1/typecho.zip -P ./nginx/www
 cd ./nginx/www
 sudo unzip -q typecho.zip
 sudo chmod -R 777 ./usr/uploads
