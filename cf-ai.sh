@@ -152,7 +152,7 @@ services:
     image: nginx
     restart: always
     volumes:
-      - /root/web/nginx:/etc/nginx/conf.d
+      - /root/web/nginx/nginx.conf:/etc/nginx/conf.d/nginx.conf:ro
       - /root/web/cert:/etc/nginx/cert
       - /root/web/typecho:/var/www/html
     ports:
