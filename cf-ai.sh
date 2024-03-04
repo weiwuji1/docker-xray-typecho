@@ -5,6 +5,7 @@ if ! command -v docker &> /dev/null; then
   # 安装 Docker
   echo "正在安装 Docker..."
   sudo apt update
+  sudo apt-get -y install curl wget unzip
   sudo curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun
 fi
 
