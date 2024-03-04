@@ -34,7 +34,7 @@ read -p "邮箱：" EMAIL
 echo "请输入 WebSocket 路径："
 read -p "WebSocket 路径：" your_path
 
-cat > ./web/nginx/nginx.conf << EOF
+cat > ./web/nginx/default.conf << EOF
 server {
   listen 80;
   server_name $domain;
@@ -152,7 +152,7 @@ services:
     image: nginx
     restart: always
     volumes:
-      - /root/web/nginx/nginx.conf:/etc/nginx/conf.d/nginx.conf:ro
+      - /root/web/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - /root/web/cert:/etc/nginx/cert
       - /root/web/typecho:/var/www/html
     ports:
