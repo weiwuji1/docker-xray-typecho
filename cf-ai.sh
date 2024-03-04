@@ -34,7 +34,7 @@ read -p "邮箱：" EMAIL
 echo "请输入 WebSocket 路径："
 read -p "WebSocket 路径：" your_path
 
-cat > ./nginx/nginx.conf << EOF
+cat > ./web/nginx/nginx.conf << EOF
 server {
   listen 80;
   server_name $domain;
@@ -71,7 +71,7 @@ EOF
 echo "请输入 Xray 的 UUID："
 read -p "UUID：" xray_uuid
 
-cat > ./xray/config.json << EOF
+cat > ./web/xray/config.json << EOF
 {
   "inbounds": [
     {
@@ -141,7 +141,7 @@ services:
     image: teddysun/xray
     restart: always
     volumes:
-      - ./xray:/etc/xray
+      - /root/web/xray:/etc/xray
       - /root/web/cert:/etc/xray/cert
     ports:
       - 443:443
@@ -152,9 +152,9 @@ services:
     image: nginx
     restart: always
     volumes:
-      - ./nginx:/etc/nginx/conf.d
+      - /root/web/nginx:/etc/nginx/conf.d
       - /root/web/cert:/etc/nginx/cert
-      - ./typecho:/var/www/html
+      - /root/web/typecho:/var/www/html
     ports:
       - 80:80
 
@@ -169,7 +169,7 @@ services:
       - DB_USER=typecho
       - DB_PASSWD=$postgres_password
     volumes:
-      - ./typecho:/var/www/html
+      - /root/web/typecho:/var/www/html
     depends_on:
       - postgres
     ports:
