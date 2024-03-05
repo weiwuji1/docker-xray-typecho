@@ -256,7 +256,7 @@ echo "正在申请和安装证书..."
 
 # Create and start containers
 cd ./web
-sudo chmod -R 777 nginx
+#sudo chmod -R 777 nginx
 sudo docker compose up -d
 
 # Typecho 安装准备
@@ -264,6 +264,7 @@ wget --no-check-certificate --content-disposition https://github.com/typecho/typ
 cd ./nginx/www
 sudo unzip -q typecho.zip
 sudo chmod -R 777 ./usr/uploads
+sudo chmod -R 777 /root/web/nginx/www
 sudo rm -f ./typecho.zip
 
 # Typecho 安装后可能需要在程序自动生成的 ./nginx/www/typecho/config.inc.php 中加入一行：define('__TYPECHO_SECURE__',true);
