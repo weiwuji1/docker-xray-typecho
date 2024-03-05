@@ -265,7 +265,7 @@ wget --no-check-certificate --content-disposition https://github.com/typecho/typ
 cd ./nginx/www
 sudo unzip -q typecho.zip
 sudo chmod -R 777 ./usr/uploads
-sudo chmod -R 777 /root/web/nginx/www
+sudo chmod 777 /root/web/nginx/www
 sudo rm -f ./typecho.zip
 
 # Typecho 安装后可能需要在程序自动生成的 ./nginx/www/typecho/config.inc.php 中加入一行：define('__TYPECHO_SECURE__',true);
