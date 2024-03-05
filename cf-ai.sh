@@ -17,20 +17,20 @@ mkdir -p ./web/xray
 mkdir -p ./web/cert
 mkdir -p ./web/typecho
 
-echo "请输入域名:"
-read -p "域名: " domain
+echo "请输入域名："
+read -p "域名： " domain
 
-echo "请输入注册证书邮箱:"
-read -p "邮箱: " email
+echo "请输入注册证书邮箱："
+read -p "邮箱： " email
 
-echo "请输入 WebSocket 路径:"
-read -p "WebSocket 路径: " ws_path
+echo "请输入 WebSocket 路径："
+read -p "WebSocket 路径： " ws_path
 
 echo "请输入 Xray UUID:"
 read -p "UUID: " xray_uuid
 
-echo "请输入 PostgreSQL 密码:"
-read -sp "PostgreSQL 密码: " postgres_password
+echo "请输入 PostgreSQL 密码："
+read -sp "PostgreSQL 密码： " postgres_password
 echo
 
 # 生成 Nginx 配置文件
@@ -159,7 +159,7 @@ services:
       - DB_PORT=5432
       - DB_NAME=typecho
       - DB_USER=typecho
-      - DB_PASSWD=$postgres_password
+      - DB_PASSWD="$postgres_password"
     volumes:
       - ./web/typecho:/usr/share/nginx/html
     depends_on:
@@ -171,7 +171,7 @@ services:
     image: postgres
     restart: always
     environment:
-      - POSTGRES_PASSWORD=$postgres_password
+      - POSTGRES_PASSWORD="$postgres_password"
       - POSTGRES_DB=typecho
       - POSTGRES_USER=typecho
     volumes:
@@ -188,15 +188,15 @@ networks:
 EOF
 
 # 3. 自动申请和续签证书
-echo "请输入 Cloudflare API 密钥:"
-read -p "Cloudflare API 密钥: " cf_api_key
+echo "请输入 Cloudflare API Key:"
+read -p "Cloudflare API Key: " cf_api_key
 
 # 安装 acme.sh
 echo "正在安装 acme.sh..."
 sudo apt-get install -y socat
 curl https://get.acme.sh | sh -s email=$email
 
-# 设置 Cloudflare API 密钥
+# 设置 Cloudflare API Key 和 Email
 export CF_Key="$cf_api_key"
 export CF_Email="$email"
 
