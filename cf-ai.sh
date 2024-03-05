@@ -1,76 +1,77 @@
 #!/bin/bash
 
-# 检查 Docker 是否已经安装
-if ! command -v docker &> /dev/null; then
-  # 安装 Docker
-  echo "正在安装 Docker..."
-  sudo apt update
-  sudo apt-get -y install curl wget unzip
-  sudo curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun
-fi
+# 1. 安装 Docker 和 Docker Compose
+echo "正在安装 Docker 和 Docker Compose..."
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl gnupg lsb-release
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
-# 检查 Docker Compose 是否已经安装
-if ! command -v docker compose &> /dev/null; then
-  # 安装 Docker Compose
-  echo "正在安装 Docker Compose..."
-  sudo apt-get -y install docker-compose-plugin
-fi
-
-# 2. 用 Docker compose 部署 Xray 和 Web 服务（Nginx + PostgreSQL + Typecho）
+# 2. 部署 Xray 和 Web 服务（Nginx + PostgreSQL + Typecho）
 echo "正在部署 Xray 和 Web 服务..."
-# 创建配置文件目录
 mkdir -p ./web/nginx
 mkdir -p ./web/xray
 mkdir -p ./web/cert
 mkdir -p ./web/typecho
 
-# 3. 生成 Nginx 配置文件
-echo "请输入域名"
-read -p "域名：" domain
+echo "请输入域名:"
+read -p "域名: " domain
 
-echo "请输入注册证书邮箱："
-read -p "邮箱：" EMAIL
+echo "请输入注册证书邮箱:"
+read -p "邮箱: " email
 
-echo "请输入 WebSocket 路径："
-read -p "WebSocket 路径：" your_path
+echo "请输入 WebSocket 路径:"
+read -p "WebSocket 路径: " ws_path
 
-cat > ./web/nginx/default.conf << EOF
+echo "请输入 Xray UUID:"
+read -p "UUID: " xray_uuid
+
+echo "请输入 PostgreSQL 密码:"
+read -sp "PostgreSQL 密码: " postgres_password
+echo
+
+# 生成 Nginx 配置文件
+cat > ./web/nginx/nginx.conf << EOF
 server {
-  listen 80;
-  server_name $domain;
+    listen 80;
+    server_name $domain;
+    return 301 https://$server_name$request_uri;
+}
 
-  location / {
-    proxy_pass http://typecho:8080;
-    proxy_set_header Host \$host;
-    proxy_set_header X-Real-IP \$remote_addr;
-    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto \$scheme;
-    proxy_set_header X-Forwarded-Host \$host;
-    proxy_set_header Upgrade \$http_upgrade;
-    proxy_set_header Connection "upgrade";
-  }
+server {
+    listen 443 ssl;
+    server_name $domain;
 
-  location $your_path {
-    proxy_pass http://xray:443;
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade \$http_upgrade;
-    proxy_set_header Connection "upgrade";
-    proxy_set_header Host \$http_host;
-    proxy_set_header X-Real-IP \$remote_addr;
-    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto \$scheme;
-    proxy_set_header X-Forwarded-Host \$host;
-  }
+    ssl_certificate /etc/nginx/cert/nginx.crt;
+    ssl_certificate_key /etc/nginx/cert/nginx.key;
 
-  ssl_certificate /etc/nginx/cert/nginx.crt;
-  ssl_certificate_key /etc/nginx/cert/nginx.key;
+    location / {
+        proxy_pass http://typecho:80;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+    }
+
+    location $ws_path {
+        proxy_pass http://xray:15243;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+    }
 }
 EOF
 
-# 4. 生成 Xray 配置文件
-echo "请输入 Xray 的 UUID："
-read -p "UUID：" xray_uuid
-
+# 生成 Xray 配置文件
 cat > ./web/xray/config.json << EOF
 {
   "inbounds": [
@@ -87,7 +88,7 @@ cat > ./web/xray/config.json << EOF
       }
     },
     {
-      "port": 443,
+      "port": 15243,
       "protocol": "vless",
       "settings": {
         "clients": [
@@ -106,16 +107,8 @@ cat > ./web/xray/config.json << EOF
       "streamSettings": {
         "network": "ws",
         "wsSettings": {
-          "path": "$your_path"
+          "path": "$ws_path"
         }
-      },
-      "tlsSettings": {
-        "certificates": [
-          {
-            "certificateFile": "/home/root/cert/nginx.crt",
-            "keyFile": "/home/root/cert/nginx.key"
-          }
-        ]
       }
     }
   ],
@@ -128,10 +121,7 @@ cat > ./web/xray/config.json << EOF
 }
 EOF
 
-# 5. 生成 Docker-compose 配置文件
-echo "请输入 PostgreSQL 密码："
-read -sp "PostgreSQL 密码：" postgres_password
-
+# 生成 Docker Compose 配置文件
 cat > docker-compose.yml << EOF
 version: '3'
 services:
@@ -139,22 +129,26 @@ services:
     image: teddysun/xray
     restart: always
     volumes:
-      - /root/web/xray:/etc/xray
-      - /root/web/cert:/home/root/cert
+      - ./web/xray:/etc/xray
     ports:
-      - 443:443
-      - 1080:1080      
-      - 443:443/udp
+      - 15243:15243
+      - 15243:15243/udp
+      - 1080:1080
+    networks:
+      - app-network
 
   nginx:
     image: nginx
     restart: always
     volumes:
-      - /root/web/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-      - /root/web/cert:/etc/nginx/cert
-      - /root/web/typecho:/var/www/html
+      - ./web/nginx:/etc/nginx/conf.d
+      - ./web/cert:/etc/nginx/cert
+      - ./web/typecho:/var/www/html
     ports:
       - 80:80
+      - 443:443
+    networks:
+      - app-network
 
   typecho:
     image: 80x86/typecho
@@ -167,11 +161,11 @@ services:
       - DB_USER=typecho
       - DB_PASSWD=$postgres_password
     volumes:
-      - /root/web/typecho:/usr/share/nginx/html
+      - ./web/typecho:/usr/share/nginx/html
     depends_on:
       - postgres
-    ports:
-      - 8080:80
+    networks:
+      - app-network
 
   postgres:
     image: postgres
@@ -182,37 +176,37 @@ services:
       - POSTGRES_USER=typecho
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    networks:
+      - app-network
 
 volumes:
   postgres-data:
-  typecho:
-EOF
 
-# 6. 通过 acme.sh 自动申请和续签证书（使用 Cloudflare 解析域名）
-echo "请输入以下参数："
-read -p "CloudFlare API 密钥：" CF_api_key
+networks:
+  app-network:
+    driver: bridge
+
+# 3. 自动申请和续签证书
+echo "请输入 Cloudflare API 密钥:"
+read -p "Cloudflare API 密钥: " cf_api_key
 
 # 安装 acme.sh
 echo "正在安装 acme.sh..."
-sudo apt install socat
-curl https://get.acme.sh | sh
+sudo apt-get install -y socat
+curl https://get.acme.sh | sh -s email=$email
 
 # 设置 Cloudflare API 密钥
-echo "正在设置 CloudFlare API 密钥..."
-export CF_Key="$CF_api_key"
-export CF_Email="$EMAIL"
+export CF_Key="$cf_api_key"
+export CF_Email="$email"
 
 # 使用 acme.sh 申请和安装证书
 echo "正在申请和安装证书..."
-~/.acme.sh/acme.sh --register-account -m $EMAIL
-~/.acme.sh/acme.sh --issue --dns dns_cf -d $domain -d *.$domain --keylength ec-256 --force
-~/.acme.sh/acme.sh --installcert -d $domain --ecc --fullchain-file /root/web/cert/nginx.crt --key-file /root/web/cert/nginx.key
-# 加--force强制更新--reloadcmd docker exec nginx nginx -s force-reload
+sudo ~/.acme.sh/acme.sh --issue --dns dns_cf -d $domain -d *.$domain --keylength ec-256 --force
+sudo ~/.acme.sh/acme.sh --installcert -d $domain --ecc --fullchain-file ./web/cert/nginx.crt --key-file ./web/cert/nginx.key
 
-# 启动 Docker compose 服务
-echo "正在启动 Docker compose 服务..."
+# 4. 启动 Docker Compose 服务
+echo "正在启动 Docker Compose 服务..."
 sudo docker compose up -d
 
-# 完成部署
-sudo apt -y autoremove
+# 5. 完成部署
 echo "部署完成！"
