@@ -167,7 +167,7 @@ services:
       - DB_USER=typecho
       - DB_PASSWD=$postgres_password
     volumes:
-      - /root/web/typecho:/var/www/html
+      - /root/web/typecho:/usr/share/nginx/html
     depends_on:
       - postgres
     ports:
@@ -206,7 +206,7 @@ export CF_Email="$EMAIL"
 echo "正在申请和安装证书..."
 ~/.acme.sh/acme.sh --register-account -m $EMAIL
 ~/.acme.sh/acme.sh --issue --dns dns_cf -d $domain -d *.$domain --keylength ec-256 --force
-~/.acme.sh/acme.sh --installcert -d $domain --ecc --fullchain-file /root/web/cert/nginx.crt --key-file /root/web/cert/nginx.key
+~/.acme.sh/acme.sh --installcert -d $domain --ecc --fullchain-file /root/web/cert/nginx.crt --key-file /root/web/cert/nginx.key --reloadcmd docker exec nginx nginx -s force-reload
 # 加--force强制更新
 
 # 启动 Docker compose 服务
