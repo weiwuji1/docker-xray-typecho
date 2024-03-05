@@ -194,7 +194,7 @@ read -p "Cloudflare API Key: " cf_api_key
 # 安装 acme.sh
 echo "正在安装 acme.sh..."
 sudo apt-get install -y socat
-curl https://get.acme.sh | sh -s email=$email
+curl https://get.acme.sh | sh
 
 # 设置 Cloudflare API Key 和 Email
 export CF_Key="$cf_api_key"
@@ -202,6 +202,7 @@ export CF_Email="$email"
 
 # 使用 acme.sh 申请和安装证书
 echo "正在申请和安装证书..."
+sudo ~/.acme.sh/acme.sh --register-account -m $email
 sudo ~/.acme.sh/acme.sh --issue --dns dns_cf -d $domain -d *.$domain --keylength ec-256 --force
 sudo ~/.acme.sh/acme.sh --installcert -d $domain --ecc --fullchain-file ./web/cert/nginx.crt --key-file ./web/cert/nginx.key
 
