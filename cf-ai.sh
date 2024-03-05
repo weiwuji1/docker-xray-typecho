@@ -185,6 +185,7 @@ volumes:
 networks:
   app-network:
     driver: bridge
+EOF
 
 # 3. 自动申请和续签证书
 echo "请输入 Cloudflare API 密钥:"
