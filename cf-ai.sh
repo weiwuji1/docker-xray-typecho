@@ -17,6 +17,7 @@ mkdir -p ./web/xray
 mkdir -p ./web/cert
 mkdir -p ./web/typecho
 mkdir -p ./web/data
+sudo chmod 777 ./web/data
 
 echo "请输入域名："
 read -p "域名： " domain
