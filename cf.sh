@@ -91,7 +91,7 @@ services:
             DEPLOY_DOCKER_CONTAINER_LABEL: 'sh.acme.autoload.domain=YourDomain'
             DEPLOY_DOCKER_CONTAINER_KEY_FILE: '/etc/nginx/ssl/xray.key'
             DEPLOY_DOCKER_CONTAINER_FULLCHAIN_FILE: '/etc/nginx/ssl/xray.crt'
-            DEPLOY_DOCKER_CONTAINER_RELOAD_CMD: 'service nginx reload'
+            DEPLOY_DOCKER_CONTAINER_RELOAD_CMD: 'service nginx force-reload'
             TZ: Asia/Shanghai
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock:ro
