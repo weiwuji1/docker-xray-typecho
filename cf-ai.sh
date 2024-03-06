@@ -124,7 +124,7 @@ EOF
 
 # 生成 Docker Compose 配置文件
 cat > docker-compose.yml << EOF
-version: '3'
+version: '3.9'
 services:
   xray:
     image: teddysun/xray
@@ -184,7 +184,6 @@ volumes:
   postgres-data:
     type: bind
     source: /root/web/data
-    target: /var/lib/postgresql/data
 
 networks:
   app-network:
