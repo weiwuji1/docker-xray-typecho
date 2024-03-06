@@ -128,6 +128,7 @@ version: '3.9'
 services:
   xray:
     image: teddysun/xray
+    container_name: xray
     restart: always
     volumes:
       - ./web/xray:/etc/xray
@@ -140,6 +141,7 @@ services:
 
   nginx:
     image: nginx
+    container_name: nginx
     restart: always
     volumes:
       - ./web/nginx:/etc/nginx/conf.d
@@ -153,6 +155,7 @@ services:
 
   typecho:
     image: joyqi/typecho:nightly-php7.4-apache
+    container_name: typecho
     restart: always
     environment:
       - DB_TYPE=pgsql
@@ -170,6 +173,7 @@ services:
 
   postgres:
     image: postgres
+    container_name: postgres
     restart: always
     environment:
       - POSTGRES_PASSWORD="$postgres_password"
@@ -210,7 +214,7 @@ export CF_Email="$email"
 # 使用 acme.sh 申请和安装证书
 echo "正在申请和安装证书..."
 sudo ~/.acme.sh/acme.sh --issue --dns dns_cf -d $domain -d *.$domain --keylength ec-256
-sudo ~/.acme.sh/acme.sh --installcert -d $domain --ecc --fullchain-file ./web/cert/nginx.crt --key-file ./web/cert/nginx.key --reloadcmd "docker exec -t nginx nginx -s reload"
+sudo ~/.acme.sh/acme.sh --installcert -d $domain --ecc --fullchain-file ./web/cert/nginx.crt --key-file ./web/cert/nginx.key --reloadcmd "docker exec -t nginx service nginx force-reload"
 # 4. 启动 Docker Compose 服务
 echo "正在启动 Docker Compose 服务..."
 sudo docker compose up -d
