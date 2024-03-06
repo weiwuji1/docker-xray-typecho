@@ -16,6 +16,7 @@ mkdir -p ./web/nginx
 mkdir -p ./web/xray
 mkdir -p ./web/cert
 mkdir -p ./web/typecho
+mkdir -p ./web/data
 
 echo "请输入域名："
 read -p "域名： " domain
@@ -151,7 +152,7 @@ services:
       - app-network
 
   typecho:
-    image: 80x86/typecho
+    image: joyqi/typecho:nightly-php7.4-apache
     restart: always
     environment:
       - DB_TYPE=pgsql
@@ -181,6 +182,9 @@ services:
 
 volumes:
   postgres-data:
+    type: bind
+    source: /root/web/data
+    target: /var/lib/postgresql/data
 
 networks:
   app-network:
