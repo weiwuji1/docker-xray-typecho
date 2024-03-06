@@ -210,8 +210,8 @@ export CF_Email="$email"
 # 使用 acme.sh 申请和安装证书
 echo "正在申请和安装证书..."
 sudo ~/.acme.sh/acme.sh --issue --dns dns_cf -d $domain -d *.$domain --keylength ec-256
-sudo ~/.acme.sh/acme.sh --installcert -d $domain --ecc --fullchain-file ./web/cert/nginx.crt --key-file ./web/cert/nginx.key --reloadcmd "docker exec -t nginx nginx -s force-reload"
-
+#sudo ~/.acme.sh/acme.sh --installcert -d $domain --ecc --fullchain-file ./web/cert/nginx.crt --key-file ./web/cert/nginx.key --reloadcmd "docker exec -t nginx nginx -s force-reload"
+sudo ~/.acme.sh/acme.sh --installcert -d $domain --ecc --fullchain-file ./web/cert/nginx.crt --key-file ./web/cert/nginx.key --reloadcmd "docker exec -t nginx nginx -s stop && docker exec -t nginx nginx"
 # 4. 启动 Docker Compose 服务
 echo "正在启动 Docker Compose 服务..."
 sudo docker compose up -d
