@@ -44,7 +44,7 @@ services:
             - dockernet
 
     web:
-        image: nginx:alpine
+        image: nginx
         container_name: nginx
         labels:
             - sh.acme.autoload.domain=YourDomain
