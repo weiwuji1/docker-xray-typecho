@@ -162,7 +162,7 @@ services:
       - DB_USER=typecho
       - DB_PASSWD="$postgres_password"
     volumes:
-      - ./web/typecho:/usr/share/nginx/html
+      - ./web/typecho:/app
     depends_on:
       - postgres
     networks:
@@ -177,6 +177,7 @@ services:
       - POSTGRES_USER=typecho
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      
     networks:
       - app-network
 
