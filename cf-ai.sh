@@ -182,8 +182,11 @@ services:
 
 volumes:
   postgres-data:
-    type: bind
-    source: /root/web/data
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /root/web/data
 
 networks:
   app-network:
