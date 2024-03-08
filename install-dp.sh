@@ -46,7 +46,7 @@ services:
             - dockernet
 
     web:
-        image: nginx:alpine
+        image: nginx
         container_name: nginx
         labels:
             - sh.acme.autoload.domain=YourDomain
@@ -257,21 +257,21 @@ cd ./web
 sudo docker compose up -d
 
 # Install certificate
-sudo docker exec -i acme acme.sh --upgrade -b dev
-sudo docker exec -i acme acme.sh --register-account -m $XRAY_EMAIL
-sudo docker exec -i acme acme.sh --issue --dns dns_dp -d $DOMAIN -d *.$DOMAIN
-sudo docker exec -i acme acme.sh --deploy -d $DOMAIN  --deploy-hook docker
-echo “56 * * * * docker exec acme.sh --cron > /dev/null” >> /var/spool/cron/root
+#sudo docker exec -i acme acme.sh --upgrade -b dev
+#sudo docker exec -i acme acme.sh --register-account -m $XRAY_EMAIL
+#sudo docker exec -i acme acme.sh --issue --dns dns_dp -d $DOMAIN -d *.$DOMAIN
+#sudo docker exec -i acme acme.sh --deploy -d $DOMAIN  --deploy-hook docker
+#echo “56 * * * * docker exec acme.sh --cron > /dev/null” >> /var/spool/cron/root
 
 #临时解决nginx证书问题
 #cp -r /root/web/cert/. /root/web/nginx/cert
 
 # Stop and start containers
-sudo docker compose down
+#sudo docker compose down
 sudo chmod -R 777 nginx
-sudo docker compose up -d
+#sudo docker compose up -d
 
-wget --no-check-certificate --content-disposition https://github.com/typecho/typecho/releases/download/v1.2.1-rc/typecho.zip -P ./nginx/www
+wget --no-check-certificate --content-disposition https://github.com/typecho/typecho/releases/download/v1.2.1/typecho.zip -P ./nginx/www
 cd ./nginx/www
 sudo unzip -q typecho.zip
 sudo chmod -R 777 ./usr/uploads
