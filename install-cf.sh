@@ -236,7 +236,6 @@ sed -i "s#Ws_Path#$XRAY_PATH#g" ./web/nginx/conf.d/default.conf
 
 
 # 安装 acme.sh
-echo "正在安装 acme.sh..."
 sudo mkdir -p ./web/cert
 sudo apt install socat
 curl https://get.acme.sh | sh
@@ -247,29 +246,28 @@ export CF_Key="$CF_KEY"
 export CF_Email="$XRAY_EMAIL"
 
 # 使用 acme.sh 申请和安装证书
-echo "正在申请和安装证书..."
-~/.acme.sh/acme.sh --register-account -m $XRAY_EMAIL
-~/.acme.sh/acme.sh --issue --dns dns_cf -d $DOMAIN -d *.$DOMAIN --keylength ec-256
+sudo ~/.acme.sh/acme.sh --register-account -m $XRAY_EMAIL
+sudo ~/.acme.sh/acme.sh --issue --dns dns_cf -d $DOMAIN -d *.$DOMAIN --keylength ec-256
 # 加--force强制更新 
-~/.acme.sh/acme.sh --installcert -d $DOMAIN --ecc --fullchain-file /root/web/cert/xray.crt --key-file /root/web/cert/xray.key --reloadcmd "docker exec -t nginx service nginx force-reload"
+sudo ~/.acme.sh/acme.sh --installcert -d $DOMAIN --ecc --fullchain-file /root/web/cert/xray.crt --key-file /root/web/cert/xray.key
 
 # Create and start containers
-cd ./web
-#sudo chmod -R 777 nginx
-sudo docker compose up -d
+#sudo chmod -R 777 ./web/nginx
+sudo docker compose -f ./web/docker-compose.yml up -d
+~/.acme.sh/acme.sh --installcert -d $DOMAIN --ecc --fullchain-file /root/web/cert/xray.crt --key-file /root/web/cert/xray.key --reloadcmd "docker exec -t nginx service nginx force-reload"
 
 # Typecho 安装准备
-wget --no-check-certificate --content-disposition https://github.com/typecho/typecho/releases/download/v1.2.1/typecho.zip -P ./nginx/www
-#cd ./nginx/www
+wget --no-check-certificate --content-disposition https://github.com/typecho/typecho/releases/download/v1.2.1/typecho.zip -P ./web/nginx/www
+#cd ./web/nginx/www
 #sudo unzip -q typecho.zip
 #sudo chmod 777 /root/web/nginx/www
 #sudo chmod -R 777 ./usr/uploads
 #sudo rm -f ./typecho.zip
 
-sudo unzip -q ./nginx/www/typecho.zip
-sudo chmod 777 ./nginx/www
-sudo chmod -R 777 ./nginx/www/usr/uploads
-sudo rm -f ./nginx/www/typecho.zip
+sudo unzip -q ./web/nginx/www/typecho.zip
+sudo chmod 777 ./web/nginx/www
+sudo chmod -R 777 ./web/nginx/www/usr/uploads
+sudo rm -f ./web/nginx/www/typecho.zip
 
 # Typecho 安装后可能需要在程序自动生成的 ./nginx/www/typecho/config.inc.php 中加入一行：define('__TYPECHO_SECURE__',true);
 # sed -i -e '$a\define("__TYPECHO_SECURE__", true);' ./nginx/www/typecho/config.inc.php
