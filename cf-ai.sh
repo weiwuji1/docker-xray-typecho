@@ -123,7 +123,7 @@ cat > ./web/xray/config.json << EOF
 EOF
 
 # 生成 Docker Compose 配置文件
-cat > docker-compose.yml << EOF
+cat > ./web/docker-compose.yml << EOF
 version: '3.9'
 services:
   xray:
@@ -214,10 +214,11 @@ export CF_Email="$email"
 # 使用 acme.sh 申请和安装证书
 echo "正在申请和安装证书..."
 sudo ~/.acme.sh/acme.sh --issue --dns dns_cf -d $domain -d *.$domain --keylength ec-256
-sudo ~/.acme.sh/acme.sh --installcert -d $domain --ecc --fullchain-file ./web/cert/nginx.crt --key-file ./web/cert/nginx.key --reloadcmd "docker exec -t nginx service nginx force-reload"
+sudo ~/.acme.sh/acme.sh --installcert -d $domain --ecc --fullchain-file ./web/cert/nginx.crt --key-file ./web/cert/nginx.key
 # 4. 启动 Docker Compose 服务
 echo "正在启动 Docker Compose 服务..."
-sudo docker compose up -d
+sudo docker compose -f ./web/docker-compose.yml up -d
+sudo ~/.acme.sh/acme.sh --installcert -d $domain --ecc --fullchain-file ./web/cert/nginx.crt --key-file ./web/cert/nginx.key --reloadcmd "docker exec -t nginx service nginx force-reload"
 
 # 5. 完成部署
 echo "部署完成！"
