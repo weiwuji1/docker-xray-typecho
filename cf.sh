@@ -44,7 +44,7 @@ services:
             - dockernet
 
     web:
-        image: nginx:alpine
+        image: nginx
         container_name: nginx
         labels:
             - sh.acme.autoload.domain=YourDomain
@@ -259,17 +259,17 @@ sed -i "s#Ws_Path#$XRAY_PATH#g" ./web/nginx/conf.d/default.conf
 sudo docker compose -f ./web/docker-compose.yml up -d
 
 # 安装 acme.sh
-echo "正在安装 acme.sh..."
-sudo apt install socat
-curl https://get.acme.sh | sh
+#echo "正在安装 acme.sh..."
+#sudo apt install socat
+#curl https://get.acme.sh | sh
 
 # 使用 acme.sh 申请和安装证书
-echo "正在申请和安装证书..."
-sudo docker exec -i acme acme.sh --upgrade
-sudo docker exec -i acme acme.sh --register-account -m $XRAY_EMAIL
-sudo docker exec -i acme acme.sh --issue --dns dns_cf -d $DOMAIN -d *.$DOMAIN
-sudo docker exec -i acme acme.sh --deploy -d $DOMAIN  --deploy-hook docker
-echo '56 4 * * * docker exec acme.sh --cron > /dev/null' >> /var/spool/cron/crontabs/root
+#echo "正在申请和安装证书..."
+#sudo docker exec -i acme acme.sh --upgrade
+#sudo docker exec -i acme acme.sh --register-account -m $XRAY_EMAIL
+#sudo docker exec -i acme acme.sh --issue --dns dns_cf -d $DOMAIN -d *.$DOMAIN
+#sudo docker exec -i acme acme.sh --deploy -d $DOMAIN  --deploy-hook docker
+#echo '56 4 * * * docker exec acme.sh --cron > /dev/null' >> /var/spool/cron/crontabs/root
 
 
 # Typecho 安装准备
