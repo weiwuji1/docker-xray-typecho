@@ -44,15 +44,15 @@ sed -i "s/admin@yourdomain.com/$XRAY_EMAIL/g" xray/config/config.json
 sudo docker compose up -d
 
 # Install certificate
-sudo docker exec -i acme acme.sh --register-account -m $XRAY_EMAIL
-sudo docker exec -i acme acme.sh --issue --dns dns_dp -d $DOMAIN -d *.$DOMAIN
-sudo docker exec -i acme acme.sh --deploy -d $DOMAIN  --deploy-hook docker
+#sudo docker exec -i acme acme.sh --register-account -m $XRAY_EMAIL
+#sudo docker exec -i acme acme.sh --issue --dns dns_dp -d $DOMAIN -d *.$DOMAIN
+#sudo docker exec -i acme acme.sh --deploy -d $DOMAIN  --deploy-hook docker
 
 
 # Stop and start containers
-sudo docker compose down
+#sudo docker compose down
 sudo chmod -R 777 nginx
-sudo docker compose up -d
+#sudo docker compose up -d
 
 # Typecho 安装后可能需要在程序自动生成的 ./nginx/www/typecho/config.inc.php 中加入一行：define('__TYPECHO_SECURE__',true);
 # sed -i -e '$a\define("__TYPECHO_SECURE__", true);' ./nginx/www/typecho/config.inc.php
