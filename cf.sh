@@ -280,7 +280,7 @@ wget --no-check-certificate --content-disposition https://github.com/typecho/typ
 #sudo chmod -R 777 ./usr/uploads
 #sudo rm -f ./typecho.zip
 
-sudo unzip -q ./web/nginx/www/typecho.zip
+sudo unzip -q ./web/nginx/www/typecho.zip -d ./web/nginx/www
 sudo chmod 777 ./web/nginx/www
 sudo chmod -R 777 ./web/nginx/www/usr/uploads
 sudo rm -f ./web/nginx/www/typecho.zip
